@@ -70,14 +70,33 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
+        {/* Large glowing orbs */}
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse-soft" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse-soft delay-700" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse-soft delay-300" />
-        {/* Floating particles */}
-        <div className="absolute top-20 left-20 w-2 h-2 bg-blue-400/40 rounded-full animate-float" />
-        <div className="absolute top-40 right-32 w-3 h-3 bg-indigo-400/30 rounded-full animate-float delay-200" />
-        <div className="absolute bottom-32 left-40 w-2 h-2 bg-cyan-400/40 rounded-full animate-float delay-500" />
-        <div className="absolute bottom-20 right-20 w-2 h-2 bg-purple-400/30 rounded-full animate-float delay-700" />
+        <div className="absolute top-20 left-1/4 w-64 h-64 bg-purple-500/15 rounded-full blur-3xl animate-pulse-soft delay-500" />
+        <div className="absolute bottom-20 right-1/4 w-72 h-72 bg-teal-500/10 rounded-full blur-3xl animate-pulse-soft delay-200" />
+        
+        {/* Floating particles - small */}
+        <div className="absolute top-[10%] left-[15%] w-2 h-2 bg-blue-400/50 rounded-full animate-float" />
+        <div className="absolute top-[20%] right-[20%] w-3 h-3 bg-indigo-400/40 rounded-full animate-float delay-200" />
+        <div className="absolute top-[35%] left-[10%] w-2 h-2 bg-cyan-400/50 rounded-full animate-float delay-500" />
+        <div className="absolute top-[15%] left-[45%] w-2 h-2 bg-purple-400/40 rounded-full animate-float delay-300" />
+        <div className="absolute top-[25%] right-[35%] w-1.5 h-1.5 bg-blue-300/50 rounded-full animate-float delay-700" />
+        
+        {/* Floating particles - medium */}
+        <div className="absolute top-[45%] left-[8%] w-4 h-4 bg-indigo-400/25 rounded-full animate-float delay-100" />
+        <div className="absolute top-[40%] right-[12%] w-3 h-3 bg-cyan-400/30 rounded-full animate-float delay-500" />
+        <div className="absolute top-[55%] right-[25%] w-2.5 h-2.5 bg-purple-400/35 rounded-full animate-float delay-300" />
+        
+        {/* Floating particles - bottom area */}
+        <div className="absolute bottom-[30%] left-[20%] w-2 h-2 bg-blue-400/45 rounded-full animate-float delay-150" />
+        <div className="absolute bottom-[25%] right-[15%] w-3 h-3 bg-teal-400/35 rounded-full animate-float delay-500" />
+        <div className="absolute bottom-[15%] left-[35%] w-2 h-2 bg-indigo-400/40 rounded-full animate-float delay-700" />
+        <div className="absolute bottom-[20%] right-[40%] w-1.5 h-1.5 bg-cyan-300/50 rounded-full animate-float delay-200" />
+        <div className="absolute bottom-[35%] left-[5%] w-2.5 h-2.5 bg-purple-400/30 rounded-full animate-float delay-300" />
+        <div className="absolute bottom-[10%] right-[30%] w-2 h-2 bg-blue-400/40 rounded-full animate-float delay-100" />
+        <div className="absolute bottom-[40%] right-[8%] w-3 h-3 bg-indigo-300/25 rounded-full animate-float delay-500" />
       </div>
 
       <Card className="w-full max-w-md relative z-10 shadow-2xl border-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl animate-scale-in">
