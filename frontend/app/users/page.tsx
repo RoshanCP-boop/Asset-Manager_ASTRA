@@ -67,6 +67,7 @@ export default function UsersPage() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Create user form state
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -164,6 +165,7 @@ export default function UsersPage() {
   async function loadUsers() {
     try {
       setError(null);
+      setRefreshing(true);
       const token = getToken();
       if (!token) throw new Error("Not logged in");
 
@@ -188,6 +190,7 @@ export default function UsersPage() {
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
 
@@ -468,19 +471,19 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-subtle">
       {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 shadow-sm">
+      <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-700/50 sticky top-0 z-50 shadow-soft">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <div className="flex items-center gap-3 group">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25 transition-transform group-hover:scale-105">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-800 dark:text-white">User Management</h1>
+                <h1 className="text-xl font-bold text-gradient">User Management</h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400">Manage system users</p>
               </div>
             </div>
@@ -488,7 +491,7 @@ export default function UsersPage() {
               {isAdmin && (
                 <Button 
                   onClick={() => setShowCreateForm(true)}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-500/20 transition-all hover:shadow-lg hover:-translate-y-0.5"
+                  className="btn-primary-gradient text-white active-scale"
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -499,7 +502,7 @@ export default function UsersPage() {
               {isManager && (
                 <Button 
                   onClick={() => setShowRequestForm(true)}
-                  className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-md shadow-emerald-500/20 transition-all hover:shadow-lg hover:-translate-y-0.5"
+                  className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md shadow-emerald-500/25 transition-all hover:shadow-lg hover:-translate-y-0.5 active-scale"
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -507,14 +510,14 @@ export default function UsersPage() {
                   Request User
                 </Button>
               )}
-              <Button variant="outline" onClick={() => router.push("/assets")} className="transition-all hover:-translate-y-0.5">
+              <Button variant="outline" onClick={() => router.push("/assets")} className="hover-lift active-scale">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
                 Assets
               </Button>
-              <Button variant="outline" onClick={loadUsers} className="transition-all hover:-translate-y-0.5">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <Button variant="outline" onClick={loadUsers} disabled={refreshing} className="hover-lift active-scale">
+                <svg className={`w-4 h-4 mr-2 transition-transform ${refreshing ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Refresh
@@ -525,7 +528,7 @@ export default function UsersPage() {
                   clearToken();
                   window.location.href = "/login";
                 }}
-                className="text-slate-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+                className="text-slate-600 hover:text-red-600 hover:bg-red-50/80 transition-all hover-lift"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -722,8 +725,8 @@ export default function UsersPage() {
                     {pendingRequests
                       .filter((r) => r.status === "PENDING")
                       .map((req, index) => (
-                        <TableRow key={req.id}>
-                          <TableCell>{index + 1}</TableCell>
+                        <TableRow key={req.id} className="table-row-hover transition-all">
+                          <TableCell className="font-medium text-slate-500">{index + 1}</TableCell>
                           <TableCell>{req.requested_name}</TableCell>
                           <TableCell>{req.requested_email}</TableCell>
                           <TableCell>{req.requested_role}</TableCell>
@@ -816,8 +819,8 @@ export default function UsersPage() {
               </TableHeader>
               <TableBody>
                 {paginatedUsers.map((user, index) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
+                  <TableRow key={user.id} className="table-row-hover transition-all">
+                    <TableCell className="font-medium text-slate-500">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
                     <TableCell>
                       <Link href={`/users/${user.id}`} className="text-blue-600 hover:underline">
                         {user.name}
@@ -827,7 +830,7 @@ export default function UsersPage() {
                     <TableCell>
                       {isAdmin && user.id !== currentUser?.id ? (
                         <select
-                          className="border rounded px-2 py-1 bg-transparent text-sm"
+                          className="border rounded-lg px-2 py-1 bg-white text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                           value={user.role}
                           onChange={(e) =>
                             changeUserRole(user.id, user.name, user.role, e.target.value)
@@ -840,16 +843,22 @@ export default function UsersPage() {
                           ))}
                         </select>
                       ) : (
-                        user.role
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          user.role === "ADMIN" ? "role-admin" :
+                          user.role === "MANAGER" ? "role-manager" :
+                          user.role === "AUDITOR" ? "role-auditor" : "role-employee"
+                        }`}>
+                          {user.role}
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>
                       <span
-                        className={
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           user.is_active
-                            ? "text-green-600 font-medium"
-                            : "text-red-600 font-medium"
-                        }
+                            ? "status-in-stock"
+                            : "status-retired"
+                        }`}
                       >
                         {user.status}
                       </span>

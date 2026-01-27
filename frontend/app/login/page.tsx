@@ -70,15 +70,23 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse-soft" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse-soft delay-700" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse-soft delay-300" />
+        {/* Floating particles */}
+        <div className="absolute top-20 left-20 w-2 h-2 bg-blue-400/40 rounded-full animate-float" />
+        <div className="absolute top-40 right-32 w-3 h-3 bg-indigo-400/30 rounded-full animate-float delay-200" />
+        <div className="absolute bottom-32 left-40 w-2 h-2 bg-cyan-400/40 rounded-full animate-float delay-500" />
+        <div className="absolute bottom-20 right-20 w-2 h-2 bg-purple-400/30 rounded-full animate-float delay-700" />
       </div>
 
-      <Card className="w-full max-w-md relative z-10 shadow-2xl border-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <CardHeader className="text-center pb-2">
+      <Card className="w-full max-w-md relative z-10 shadow-2xl border-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl animate-scale-in">
+        {/* Subtle gradient border effect */}
+        <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500/20 via-transparent to-indigo-500/20 pointer-events-none" />
+        
+        <CardHeader className="text-center pb-2 relative">
           {/* Logo/Icon */}
-          <div className="mx-auto mb-4 w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 animate-in zoom-in duration-300">
+          <div className="mx-auto mb-4 w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 animate-float">
             <svg
               className="w-8 h-8 text-white"
               fill="none"
@@ -93,7 +101,7 @@ export default function LoginPage() {
               />
             </svg>
           </div>
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
+          <CardTitle className="text-2xl font-bold text-gradient">
             Asset Manager
           </CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
@@ -154,7 +162,7 @@ export default function LoginPage() {
               </div>
             )}
             <Button 
-              className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg shadow-blue-500/25 transition-all duration-200 hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-0.5" 
+              className="w-full h-11 btn-primary-gradient text-white font-medium active-scale" 
               disabled={loading}
             >
               {loading ? (
@@ -166,7 +174,12 @@ export default function LoginPage() {
                   Signing in...
                 </span>
               ) : (
-                "Sign in"
+                <span className="flex items-center gap-2">
+                  Sign in
+                  <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
               )}
             </Button>
           </form>

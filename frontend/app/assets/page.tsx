@@ -81,6 +81,7 @@ export default function AssetsPage() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
 
   // Change password form state
@@ -187,6 +188,7 @@ export default function AssetsPage() {
   async function loadAssets() {
     try {
       setError(null);
+      setRefreshing(true);
       const token = getToken();
       if (!token) throw new Error("Not logged in");
 
@@ -211,6 +213,7 @@ export default function AssetsPage() {
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
 
@@ -281,19 +284,19 @@ export default function AssetsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-subtle">
       {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 shadow-sm">
+      <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-700/50 sticky top-0 z-50 shadow-soft">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <div className="flex items-center gap-3 group">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25 transition-transform group-hover:scale-105">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-800 dark:text-white">Asset Manager</h1>
+                <h1 className="text-xl font-bold text-gradient">Asset Manager</h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400">Manage your inventory</p>
               </div>
             </div>
@@ -301,7 +304,7 @@ export default function AssetsPage() {
               {canCreateAsset && (
                 <Button 
                   onClick={() => router.push("/assets/new")}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-500/20 transition-all hover:shadow-lg hover:-translate-y-0.5"
+                  className="btn-primary-gradient text-white active-scale"
                 > 
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -311,28 +314,28 @@ export default function AssetsPage() {
               )}
 
               {canSeeUsers && (
-                <Button variant="outline" onClick={() => router.push("/users")} className="relative transition-all hover:-translate-y-0.5">
+                <Button variant="outline" onClick={() => router.push("/users")} className="relative hover-lift active-scale">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                   </svg>
                   Users
                   {isAdmin && pendingRequestCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                    <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-rose-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center animate-pulse-soft shadow-lg shadow-red-500/30">
                       {pendingRequestCount}
                     </span>
                   )}
                 </Button>
               )}
 
-              <Button variant="outline" onClick={loadAssets} className="transition-all hover:-translate-y-0.5">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <Button variant="outline" onClick={loadAssets} disabled={refreshing} className="hover-lift active-scale">
+                <svg className={`w-4 h-4 mr-2 transition-transform ${refreshing ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Refresh
               </Button>
 
               {mustChangePassword && (
-                <Button variant="outline" onClick={() => setShowPasswordForm(true)} className="border-orange-300 text-orange-600 hover:bg-orange-50">
+                <Button variant="outline" onClick={() => setShowPasswordForm(true)} className="border-orange-300 text-orange-600 hover:bg-orange-50 animate-pulse-soft hover-lift">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                   </svg>
@@ -498,8 +501,8 @@ export default function AssetsPage() {
               </TableHeader>
               <TableBody>
                 {paginatedAssets.map((asset, index) => (
-                  <TableRow key={asset.id}>
-                    <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
+                  <TableRow key={asset.id} className="table-row-hover transition-all">
+                    <TableCell className="font-medium text-slate-500">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
                     <TableCell>
                       <Link
                         href={`/assets/${asset.id}`}
@@ -518,14 +521,33 @@ export default function AssetsPage() {
                     <TableCell>
                       {asset.asset_type === "SOFTWARE" 
                         ? (() => {
-                            if (asset.status === "RETIRED") return "EXPIRED";
+                            if (asset.status === "RETIRED") {
+                              return (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium status-expired">
+                                  EXPIRED
+                                </span>
+                              );
+                            }
                             const used = asset.seats_used ?? 0;
                             const total = asset.seats_total;
                             const isFull = total !== null && total !== undefined && used >= total;
                             const status = isFull ? "ASSIGNED" : "IN_STOCK";
-                            return `${status} (${used}/${total ?? "∞"})`;
+                            const statusClass = isFull ? "status-assigned" : "status-in-stock";
+                            return (
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}`}>
+                                {status} ({used}/{total ?? "∞"})
+                              </span>
+                            );
                           })()
-                        : asset.status}
+                        : (
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            asset.status === "IN_STOCK" ? "status-in-stock" :
+                            asset.status === "ASSIGNED" ? "status-assigned" :
+                            asset.status === "IN_REPAIR" ? "status-in-repair" : "status-retired"
+                          }`}>
+                            {asset.status}
+                          </span>
+                        )}
                     </TableCell>
                   </TableRow>
                 ))}
