@@ -201,6 +201,8 @@ def list_all_asset_events(
     FromUser = aliased(models.User)
     ToUser = aliased(models.User)
     ActorUser = aliased(models.User)
+    FromLocation = aliased(models.Location)
+    ToLocation = aliased(models.Location)
 
     stmt = (
         select(
@@ -209,18 +211,22 @@ def list_all_asset_events(
             FromUser.name.label("from_user_name"),
             ToUser.name.label("to_user_name"),
             ActorUser.name.label("actor_user_name"),
+            FromLocation.name.label("from_location_name"),
+            ToLocation.name.label("to_location_name"),
         )
         .join(models.Asset, models.AssetEvent.asset_id == models.Asset.id)
         .outerjoin(FromUser, models.AssetEvent.from_user_id == FromUser.id)
         .outerjoin(ToUser, models.AssetEvent.to_user_id == ToUser.id)
         .outerjoin(ActorUser, models.AssetEvent.actor_user_id == ActorUser.id)
+        .outerjoin(FromLocation, models.AssetEvent.from_location_id == FromLocation.id)
+        .outerjoin(ToLocation, models.AssetEvent.to_location_id == ToLocation.id)
     )
     
     # Filter by event type
     if event_type:
         stmt = stmt.where(models.AssetEvent.event_type == event_type)
     
-    # Filter by search term (asset tag, user names, or notes)
+    # Filter by search term (asset tag, user names, location names, or notes)
     if search:
         search_pattern = f"%{search}%"
         stmt = stmt.where(
@@ -229,6 +235,8 @@ def list_all_asset_events(
                 FromUser.name.ilike(search_pattern),
                 ToUser.name.ilike(search_pattern),
                 ActorUser.name.ilike(search_pattern),
+                FromLocation.name.ilike(search_pattern),
+                ToLocation.name.ilike(search_pattern),
                 models.AssetEvent.notes.ilike(search_pattern),
             )
         )
@@ -238,7 +246,7 @@ def list_all_asset_events(
     rows = db.execute(stmt).all()
 
     out: list[dict] = []
-    for ev, asset_tag, from_name, to_name, actor_name in rows:
+    for ev, asset_tag, from_name, to_name, actor_name, from_loc_name, to_loc_name in rows:
         out.append(
             {
                 "id": ev.id,
@@ -255,6 +263,8 @@ def list_all_asset_events(
                 "from_user_name": from_name,
                 "to_user_name": to_name,
                 "actor_user_name": actor_name,
+                "from_location_name": from_loc_name,
+                "to_location_name": to_loc_name,
             }
         )
     return out
@@ -270,42 +280,59 @@ def update_asset(
     
     # Track changes for audit log
     changes = []
+    location_change = None  # Track location change separately for MOVE event
+    
     for k, v in updates.items():
         old_value = getattr(asset, k)
         if old_value != v:
-            # Format the field name nicely
-            field_name = k.replace("_", " ").title()
-            
-            # Special handling for location_id - show location names
+            # Special handling for location_id - create MOVE event
             if k == "location_id":
-                field_name = "Location"
-                old_display = _get_location_name(db, old_value)
-                new_display = _get_location_name(db, v)
+                location_change = {
+                    "from_location_id": old_value,
+                    "to_location_id": v,
+                    "from_name": _get_location_name(db, old_value),
+                    "to_name": _get_location_name(db, v),
+                }
             else:
+                # Format the field name nicely
+                field_name = k.replace("_", " ").title()
                 # Format values for display
                 old_display = _format_value_for_log(old_value)
                 new_display = _format_value_for_log(v)
+                changes.append(f"{field_name}: {old_display} → {new_display}")
             
-            changes.append(f"{field_name}: {old_display} → {new_display}")
-        setattr(asset, k, v)
+            setattr(asset, k, v)
 
-    # Only create event if there were actual changes
-    if not changes:
+    # Only create events if there were actual changes
+    if not changes and not location_change:
         return asset
 
     try:
         db.add(asset)
 
-        # Build descriptive notes
-        notes = "; ".join(changes)
-        
-        event = models.AssetEvent(
-            asset_id=asset.id,
-            event_type=models.AssetEventType.UPDATE,
-            actor_user_id=actor_user_id,
-            notes=notes,
-        )
-        db.add(event)
+        # Create MOVE event for location changes
+        if location_change:
+            move_notes = f"Moved from {location_change['from_name']} to {location_change['to_name']}"
+            move_event = models.AssetEvent(
+                asset_id=asset.id,
+                event_type=models.AssetEventType.MOVE,
+                actor_user_id=actor_user_id,
+                from_location_id=location_change["from_location_id"],
+                to_location_id=location_change["to_location_id"],
+                notes=move_notes,
+            )
+            db.add(move_event)
+
+        # Create UPDATE event for other changes
+        if changes:
+            notes = "; ".join(changes)
+            update_event = models.AssetEvent(
+                asset_id=asset.id,
+                event_type=models.AssetEventType.UPDATE,
+                actor_user_id=actor_user_id,
+                notes=notes,
+            )
+            db.add(update_event)
 
         db.commit()
         db.refresh(asset)
@@ -597,14 +624,60 @@ def get_audit_summary(db: Session) -> schemas.AuditSummary:
     inactive_users = total_users - active_users
 
     # Asset counts (single query)
+    # For software: use "effective status" based on seat utilization (matching frontend logic)
+    # - IN_STOCK if seats_used < seats_total (or seats_total is null/seats not configured)
+    # - ASSIGNED only if seats_used >= seats_total (fully utilized)
+    
+    # Helper: coalesce seats_used to 0 if null
+    seats_used_val = func.coalesce(models.Asset.seats_used, 0)
+    
     asset_counts = db.execute(
         select(
             func.count(models.Asset.id),
             func.sum(case((models.Asset.asset_type == models.AssetType.HARDWARE, 1), else_=0)),
             func.sum(case((models.Asset.asset_type == models.AssetType.SOFTWARE, 1), else_=0)),
-            func.sum(case((models.Asset.status == models.AssetStatus.ASSIGNED, 1), else_=0)),
-            func.sum(case((models.Asset.status == models.AssetStatus.IN_STOCK, 1), else_=0)),
+            # Assigned: hardware with ASSIGNED status + software fully utilized
+            func.sum(case(
+                (
+                    (models.Asset.asset_type == models.AssetType.HARDWARE) & 
+                    (models.Asset.status == models.AssetStatus.ASSIGNED),
+                    1
+                ),
+                (
+                    (models.Asset.asset_type == models.AssetType.SOFTWARE) & 
+                    (models.Asset.status != models.AssetStatus.RETIRED) &
+                    (models.Asset.seats_total.isnot(None)) &
+                    (seats_used_val >= models.Asset.seats_total),
+                    1
+                ),
+                else_=0
+            )),
+            # In Stock: hardware with IN_STOCK status + software with available capacity
+            func.sum(case(
+                (
+                    (models.Asset.asset_type == models.AssetType.HARDWARE) & 
+                    (models.Asset.status == models.AssetStatus.IN_STOCK),
+                    1
+                ),
+                (
+                    (models.Asset.asset_type == models.AssetType.SOFTWARE) & 
+                    (models.Asset.status != models.AssetStatus.RETIRED) &
+                    (
+                        (models.Asset.seats_total.is_(None)) |  # No seats configured = available
+                        (seats_used_val < models.Asset.seats_total)  # Has available seats
+                    ),
+                    1
+                ),
+                else_=0
+            )),
             func.sum(case((models.Asset.status == models.AssetStatus.RETIRED, 1), else_=0)),
+            # Software seat counts (keep for potential future use)
+            func.coalesce(func.sum(
+                case((models.Asset.asset_type == models.AssetType.SOFTWARE, models.Asset.seats_total), else_=0)
+            ), 0),
+            func.coalesce(func.sum(
+                case((models.Asset.asset_type == models.AssetType.SOFTWARE, models.Asset.seats_used), else_=0)
+            ), 0),
         )
     ).one()
     total_assets = asset_counts[0] or 0
@@ -613,6 +686,9 @@ def get_audit_summary(db: Session) -> schemas.AuditSummary:
     assigned_assets = asset_counts[3] or 0
     in_stock_assets = asset_counts[4] or 0
     retired_assets = asset_counts[5] or 0
+    software_seats_total = int(asset_counts[6] or 0)
+    software_seats_used = int(asset_counts[7] or 0)
+    software_seats_available = software_seats_total - software_seats_used
 
     # User event counts (single query)
     user_event_counts = db.execute(
@@ -644,6 +720,9 @@ def get_audit_summary(db: Session) -> schemas.AuditSummary:
         assigned_assets=assigned_assets,
         in_stock_assets=in_stock_assets,
         retired_assets=retired_assets,
+        software_seats_total=software_seats_total,
+        software_seats_used=software_seats_used,
+        software_seats_available=software_seats_available,
         user_events_today=user_events_today,
         user_events_week=user_events_week,
         asset_events_today=asset_events_today,

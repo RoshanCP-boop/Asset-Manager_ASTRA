@@ -562,8 +562,6 @@ export default function UserDetailPage() {
                             event.event_type === "RETURN" ? "bg-amber-100 text-amber-800" :
                             event.event_type === "MOVE" ? "bg-purple-100 text-purple-800" :
                             event.event_type === "UPDATE" ? "bg-indigo-100 text-indigo-800" :
-                            event.event_type === "REPAIR" ? "bg-cyan-100 text-cyan-800" :
-                            event.event_type === "RETIRE" ? "bg-red-100 text-red-800" :
                             "bg-gray-100 text-gray-800"
                           }`}>
                             {event.event_type.replace(/_/g, " ")}

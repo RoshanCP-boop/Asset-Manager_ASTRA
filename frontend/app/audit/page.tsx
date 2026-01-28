@@ -42,8 +42,6 @@ const ASSET_EVENT_TYPES = [
   "RETURN",
   "UPDATE",
   "MOVE",
-  "REPAIR",
-  "RETIRE",
 ];
 
 type CurrentUser = {
@@ -62,6 +60,9 @@ type AuditSummary = {
   assigned_assets: number;
   in_stock_assets: number;
   retired_assets: number;
+  software_seats_total: number;
+  software_seats_used: number;
+  software_seats_available: number;
   user_events_today: number;
   user_events_week: number;
   asset_events_today: number;
@@ -96,6 +97,8 @@ type AssetEvent = {
   from_user_name: string | null;
   to_user_name: string | null;
   actor_user_name: string | null;
+  from_location_name: string | null;
+  to_location_name: string | null;
 };
 
 export default function AuditDashboardPage() {
@@ -327,10 +330,61 @@ export default function AuditDashboardPage() {
       case "RETURN": return "bg-amber-100 text-amber-800";
       case "MOVE": return "bg-purple-100 text-purple-800";
       case "UPDATE": return "bg-indigo-100 text-indigo-800";
-      case "REPAIR": return "bg-cyan-100 text-cyan-800";
-      case "RETIRE": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
+  }
+
+  // CSV Export helpers
+  function escapeCSV(value: string | null | undefined): string {
+    if (value == null) return "";
+    const str = String(value);
+    if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  }
+
+  function downloadCSV(filename: string, csvContent: string) {
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  function exportUserEventsCSV() {
+    const headers = ["Timestamp", "Event Type", "Target User", "Actor", "Old Value", "New Value", "Notes"];
+    const rows = userEvents.map((e) => [
+      formatDateTime(e.timestamp),
+      e.event_type,
+      e.target_user_name || "",
+      e.actor_user_name || "",
+      e.old_value || "",
+      e.new_value || "",
+      e.notes || "",
+    ]);
+    const csv = [headers, ...rows].map((row) => row.map(escapeCSV).join(",")).join("\n");
+    const date = new Date().toISOString().split("T")[0];
+    downloadCSV(`user-events-${date}.csv`, csv);
+  }
+
+  function exportAssetEventsCSV() {
+    const headers = ["Timestamp", "Asset Tag", "Event Type", "From User", "To User", "From Location", "To Location", "Actor", "Notes"];
+    const rows = assetEvents.map((e) => [
+      formatDateTime(e.timestamp),
+      e.asset_tag,
+      e.event_type,
+      e.from_user_name || "",
+      e.to_user_name || "",
+      e.from_location_name || "",
+      e.to_location_name || "",
+      e.actor_user_name || "",
+      e.notes || "",
+    ]);
+    const csv = [headers, ...rows].map((row) => row.map(escapeCSV).join(",")).join("\n");
+    const date = new Date().toISOString().split("T")[0];
+    downloadCSV(`asset-events-${date}.csv`, csv);
   }
 
   if (loading) {
@@ -620,9 +674,23 @@ export default function AuditDashboardPage() {
                   {loadingUserEvents && (
                     <span className="text-sm text-muted-foreground">Loading...</span>
                   )}
-                  <span className="text-sm text-muted-foreground ml-auto">
-                    {userEvents.length} events
-                  </span>
+                  <div className="flex items-center gap-3 ml-auto">
+                    <span className="text-sm text-muted-foreground">
+                      {userEvents.length} events
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={exportUserEventsCSV}
+                      disabled={userEvents.length === 0}
+                      className="gap-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Export CSV
+                    </Button>
+                  </div>
                 </div>
                 <div className="max-h-[500px] overflow-y-auto">
                 {userEvents.length === 0 ? (
@@ -735,9 +803,23 @@ export default function AuditDashboardPage() {
                   {loadingAssetEvents && (
                     <span className="text-sm text-muted-foreground">Loading...</span>
                   )}
-                  <span className="text-sm text-muted-foreground ml-auto">
-                    {assetEvents.length} events
-                  </span>
+                  <div className="flex items-center gap-3 ml-auto">
+                    <span className="text-sm text-muted-foreground">
+                      {assetEvents.length} events
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={exportAssetEventsCSV}
+                      disabled={assetEvents.length === 0}
+                      className="gap-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Export CSV
+                    </Button>
+                  </div>
                 </div>
               <div className="max-h-[500px] overflow-y-auto">
                 {assetEvents.length === 0 ? (
@@ -780,6 +862,7 @@ export default function AuditDashboardPage() {
                           </TableCell>
                           <TableCell className="text-sm">
                             <div className="flex flex-col gap-0.5">
+                              {/* User info for ASSIGN/RETURN events */}
                               {event.from_user_name && (
                                 <span className="text-slate-500">
                                   From: <span className="font-medium text-slate-700">{event.from_user_name}</span>
@@ -790,7 +873,13 @@ export default function AuditDashboardPage() {
                                   To: <span className="font-medium text-slate-700">{event.to_user_name}</span>
                                 </span>
                               )}
-                              {event.notes && (
+                              {/* Location info for MOVE events */}
+                              {event.event_type === "MOVE" && (
+                                <span className="text-purple-600">
+                                  {event.from_location_name || "(none)"} → {event.to_location_name || "(none)"}
+                                </span>
+                              )}
+                              {event.notes && event.event_type !== "MOVE" && (
                                 <p className="text-slate-400 text-xs truncate max-w-xs" title={event.notes}>
                                   {event.notes}
                                 </p>

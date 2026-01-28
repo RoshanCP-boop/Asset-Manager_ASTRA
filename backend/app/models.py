@@ -117,8 +117,6 @@ class AssetEventType(str, Enum):
     RETURN = "RETURN"
     MOVE = "MOVE"
     UPDATE = "UPDATE"
-    REPAIR = "REPAIR"
-    RETIRE = "RETIRE"
 
 
 class AssetEvent(Base):

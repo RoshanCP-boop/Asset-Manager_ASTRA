@@ -191,6 +191,8 @@ class AssetEventAuditRead(APIModel):
     from_user_name: str | None = None
     to_user_name: str | None = None
     actor_user_name: str | None = None
+    from_location_name: str | None = None
+    to_location_name: str | None = None
 
 
 # ---- Audit Dashboard ----
@@ -205,6 +207,10 @@ class AuditSummary(APIModel):
     assigned_assets: int
     in_stock_assets: int
     retired_assets: int
+    # Software seat-level counts
+    software_seats_total: int
+    software_seats_used: int
+    software_seats_available: int
     user_events_today: int
     user_events_week: int
     asset_events_today: int
