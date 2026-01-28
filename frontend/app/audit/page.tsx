@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch, getErrorMessage } from "@/lib/api";
@@ -119,54 +119,141 @@ export default function AuditDashboardPage() {
   // Filter state for user events
   const [userEventSearch, setUserEventSearch] = useState("");
   const [userEventTypeFilter, setUserEventTypeFilter] = useState("");
+  const [loadingUserEvents, setLoadingUserEvents] = useState(false);
+  const [hasMoreUserEvents, setHasMoreUserEvents] = useState(true);
 
   // Filter state for asset events
   const [assetEventSearch, setAssetEventSearch] = useState("");
   const [assetEventTypeFilter, setAssetEventTypeFilter] = useState("");
+  const [loadingAssetEvents, setLoadingAssetEvents] = useState(false);
+  const [hasMoreAssetEvents, setHasMoreAssetEvents] = useState(true);
 
-  // Filtered user events
-  const filteredUserEvents = useMemo(() => {
-    return userEvents.filter((event) => {
-      // Filter by event type
-      if (userEventTypeFilter && event.event_type !== userEventTypeFilter) {
-        return false;
-      }
-      // Filter by search (target user, actor, or notes)
-      if (userEventSearch) {
-        const search = userEventSearch.toLowerCase();
-        const matchesTarget = event.target_user_name?.toLowerCase().includes(search);
-        const matchesActor = event.actor_user_name?.toLowerCase().includes(search);
-        const matchesNotes = event.notes?.toLowerCase().includes(search);
-        if (!matchesTarget && !matchesActor && !matchesNotes) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [userEvents, userEventSearch, userEventTypeFilter]);
+  // Pagination constants
+  const PAGE_SIZE = 100;
 
-  // Filtered asset events
-  const filteredAssetEvents = useMemo(() => {
-    return assetEvents.filter((event) => {
-      // Filter by event type
-      if (assetEventTypeFilter && event.event_type !== assetEventTypeFilter) {
-        return false;
-      }
-      // Filter by search (asset tag, user names, or notes)
-      if (assetEventSearch) {
-        const search = assetEventSearch.toLowerCase();
-        const matchesTag = event.asset_tag?.toLowerCase().includes(search);
-        const matchesFromUser = event.from_user_name?.toLowerCase().includes(search);
-        const matchesToUser = event.to_user_name?.toLowerCase().includes(search);
-        const matchesActor = event.actor_user_name?.toLowerCase().includes(search);
-        const matchesNotes = event.notes?.toLowerCase().includes(search);
-        if (!matchesTag && !matchesFromUser && !matchesToUser && !matchesActor && !matchesNotes) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [assetEvents, assetEventSearch, assetEventTypeFilter]);
+  // Debounce timer refs
+  const userSearchDebounce = useRef<NodeJS.Timeout | null>(null);
+  const assetSearchDebounce = useRef<NodeJS.Timeout | null>(null);
+
+  // Load user events with filters (reset mode - replaces existing)
+  const loadUserEvents = useCallback(async (search?: string, eventType?: string) => {
+    try {
+      setLoadingUserEvents(true);
+      const token = getToken();
+      if (!token) return;
+
+      const params = new URLSearchParams();
+      params.set("limit", String(PAGE_SIZE));
+      params.set("offset", "0");
+      if (search) params.set("search", search);
+      if (eventType) params.set("event_type", eventType);
+
+      const data = await apiFetch<UserEvent[]>(`/audit/user-events?${params}`, {}, token);
+      setUserEvents(data);
+      setHasMoreUserEvents(data.length === PAGE_SIZE);
+    } catch {
+      // Silently fail - main loadData will handle auth errors
+    } finally {
+      setLoadingUserEvents(false);
+    }
+  }, []);
+
+  // Load more user events (append mode)
+  const loadMoreUserEvents = useCallback(async () => {
+    try {
+      setLoadingUserEvents(true);
+      const token = getToken();
+      if (!token) return;
+
+      const params = new URLSearchParams();
+      params.set("limit", String(PAGE_SIZE));
+      params.set("offset", String(userEvents.length));
+      if (userEventSearch) params.set("search", userEventSearch);
+      if (userEventTypeFilter) params.set("event_type", userEventTypeFilter);
+
+      const data = await apiFetch<UserEvent[]>(`/audit/user-events?${params}`, {}, token);
+      setUserEvents((prev) => [...prev, ...data]);
+      setHasMoreUserEvents(data.length === PAGE_SIZE);
+    } catch {
+      // Silently fail
+    } finally {
+      setLoadingUserEvents(false);
+    }
+  }, [userEvents.length, userEventSearch, userEventTypeFilter]);
+
+  // Load asset events with filters (reset mode - replaces existing)
+  const loadAssetEvents = useCallback(async (search?: string, eventType?: string) => {
+    try {
+      setLoadingAssetEvents(true);
+      const token = getToken();
+      if (!token) return;
+
+      const params = new URLSearchParams();
+      params.set("limit", String(PAGE_SIZE));
+      params.set("offset", "0");
+      if (search) params.set("search", search);
+      if (eventType) params.set("event_type", eventType);
+
+      const data = await apiFetch<AssetEvent[]>(`/audit/asset-events?${params}`, {}, token);
+      setAssetEvents(data);
+      setHasMoreAssetEvents(data.length === PAGE_SIZE);
+    } catch {
+      // Silently fail
+    } finally {
+      setLoadingAssetEvents(false);
+    }
+  }, []);
+
+  // Load more asset events (append mode)
+  const loadMoreAssetEvents = useCallback(async () => {
+    try {
+      setLoadingAssetEvents(true);
+      const token = getToken();
+      if (!token) return;
+
+      const params = new URLSearchParams();
+      params.set("limit", String(PAGE_SIZE));
+      params.set("offset", String(assetEvents.length));
+      if (assetEventSearch) params.set("search", assetEventSearch);
+      if (assetEventTypeFilter) params.set("event_type", assetEventTypeFilter);
+
+      const data = await apiFetch<AssetEvent[]>(`/audit/asset-events?${params}`, {}, token);
+      setAssetEvents((prev) => [...prev, ...data]);
+      setHasMoreAssetEvents(data.length === PAGE_SIZE);
+    } catch {
+      // Silently fail
+    } finally {
+      setLoadingAssetEvents(false);
+    }
+  }, [assetEvents.length, assetEventSearch, assetEventTypeFilter]);
+
+  // Debounced search handlers
+  const handleUserSearchChange = (value: string) => {
+    setUserEventSearch(value);
+    if (userSearchDebounce.current) clearTimeout(userSearchDebounce.current);
+    userSearchDebounce.current = setTimeout(() => {
+      loadUserEvents(value, userEventTypeFilter);
+    }, 300);
+  };
+
+  const handleAssetSearchChange = (value: string) => {
+    setAssetEventSearch(value);
+    if (assetSearchDebounce.current) clearTimeout(assetSearchDebounce.current);
+    assetSearchDebounce.current = setTimeout(() => {
+      loadAssetEvents(value, assetEventTypeFilter);
+    }, 300);
+  };
+
+  // Filter type change handlers (immediate)
+  const handleUserEventTypeChange = (value: string) => {
+    setUserEventTypeFilter(value);
+    loadUserEvents(userEventSearch, value);
+  };
+
+  const handleAssetEventTypeChange = (value: string) => {
+    setAssetEventTypeFilter(value);
+    loadAssetEvents(assetEventSearch, value);
+  };
 
   useEffect(() => {
     loadData();
@@ -195,13 +282,16 @@ export default function AuditDashboardPage() {
       // Load all audit data in parallel
       const [summaryData, userEventsData, assetEventsData] = await Promise.all([
         apiFetch<AuditSummary>("/audit/summary", {}, token),
-        apiFetch<UserEvent[]>("/audit/user-events?limit=100", {}, token),
-        apiFetch<AssetEvent[]>("/audit/asset-events?limit=100", {}, token),
+        apiFetch<UserEvent[]>(`/audit/user-events?limit=${PAGE_SIZE}`, {}, token),
+        apiFetch<AssetEvent[]>(`/audit/asset-events?limit=${PAGE_SIZE}`, {}, token),
       ]);
 
       setSummary(summaryData);
       setUserEvents(userEventsData);
       setAssetEvents(assetEventsData);
+      // Set hasMore based on whether we got a full page of results
+      setHasMoreUserEvents(userEventsData.length === PAGE_SIZE);
+      setHasMoreAssetEvents(assetEventsData.length === PAGE_SIZE);
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally {
@@ -475,7 +565,7 @@ export default function AuditDashboardPage() {
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  User Events ({filteredUserEvents.length})
+                  User Events ({userEvents.length})
                 </button>
                 <button
                   onClick={() => setActiveTab("assets")}
@@ -485,7 +575,7 @@ export default function AuditDashboardPage() {
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  Asset Events ({filteredAssetEvents.length})
+                  Asset Events ({assetEvents.length})
                 </button>
               </div>
             </div>
@@ -499,12 +589,12 @@ export default function AuditDashboardPage() {
                     type="text"
                     placeholder="Search by user or notes..."
                     value={userEventSearch}
-                    onChange={(e) => setUserEventSearch(e.target.value)}
+                    onChange={(e) => handleUserSearchChange(e.target.value)}
                     className="w-64"
                   />
                   <select
                     value={userEventTypeFilter}
-                    onChange={(e) => setUserEventTypeFilter(e.target.value)}
+                    onChange={(e) => handleUserEventTypeChange(e.target.value)}
                     className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
                     <option value="">All Event Types</option>
@@ -521,13 +611,17 @@ export default function AuditDashboardPage() {
                       onClick={() => {
                         setUserEventSearch("");
                         setUserEventTypeFilter("");
+                        loadUserEvents("", "");
                       }}
                     >
                       Clear Filters
                     </Button>
                   )}
+                  {loadingUserEvents && (
+                    <span className="text-sm text-muted-foreground">Loading...</span>
+                  )}
                   <span className="text-sm text-muted-foreground ml-auto">
-                    Showing {filteredUserEvents.length} of {userEvents.length}
+                    {userEvents.length} events
                   </span>
                 </div>
                 <div className="max-h-[500px] overflow-y-auto">
@@ -535,7 +629,7 @@ export default function AuditDashboardPage() {
                   <div className="p-6 text-center text-muted-foreground">
                     No user events recorded yet.
                   </div>
-                ) : filteredUserEvents.length === 0 ? (
+                ) : userEvents.length === 0 ? (
                   <div className="p-6 text-center text-muted-foreground">
                     No events match your filters.
                   </div>
@@ -551,7 +645,7 @@ export default function AuditDashboardPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredUserEvents.map((event) => (
+                      {userEvents.map((event) => (
                         <TableRow key={event.id} className="table-row-hover">
                           <TableCell className="text-sm text-slate-600">
                             {formatDateTime(event.timestamp)}
@@ -586,6 +680,18 @@ export default function AuditDashboardPage() {
                     </TableBody>
                   </Table>
                 )}
+                {/* Load More Button */}
+                {hasMoreUserEvents && userEvents.length > 0 && (
+                  <div className="p-4 border-t border-slate-100 dark:border-slate-800 text-center">
+                    <Button
+                      variant="outline"
+                      onClick={loadMoreUserEvents}
+                      disabled={loadingUserEvents}
+                    >
+                      {loadingUserEvents ? "Loading..." : `Load More (showing ${userEvents.length})`}
+                    </Button>
+                  </div>
+                )}
               </div>
               </div>
             )}
@@ -598,12 +704,12 @@ export default function AuditDashboardPage() {
                     type="text"
                     placeholder="Search by asset, user, or notes..."
                     value={assetEventSearch}
-                    onChange={(e) => setAssetEventSearch(e.target.value)}
+                    onChange={(e) => handleAssetSearchChange(e.target.value)}
                     className="w-64"
                   />
                   <select
                     value={assetEventTypeFilter}
-                    onChange={(e) => setAssetEventTypeFilter(e.target.value)}
+                    onChange={(e) => handleAssetEventTypeChange(e.target.value)}
                     className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
                     <option value="">All Event Types</option>
@@ -620,13 +726,17 @@ export default function AuditDashboardPage() {
                       onClick={() => {
                         setAssetEventSearch("");
                         setAssetEventTypeFilter("");
+                        loadAssetEvents("", "");
                       }}
                     >
                       Clear Filters
                     </Button>
                   )}
+                  {loadingAssetEvents && (
+                    <span className="text-sm text-muted-foreground">Loading...</span>
+                  )}
                   <span className="text-sm text-muted-foreground ml-auto">
-                    Showing {filteredAssetEvents.length} of {assetEvents.length}
+                    {assetEvents.length} events
                   </span>
                 </div>
               <div className="max-h-[500px] overflow-y-auto">
@@ -634,7 +744,7 @@ export default function AuditDashboardPage() {
                   <div className="p-6 text-center text-muted-foreground">
                     No asset events recorded yet.
                   </div>
-                ) : filteredAssetEvents.length === 0 ? (
+                ) : assetEvents.length === 0 ? (
                   <div className="p-6 text-center text-muted-foreground">
                     No events match your filters.
                   </div>
@@ -650,7 +760,7 @@ export default function AuditDashboardPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredAssetEvents.map((event) => (
+                      {assetEvents.map((event) => (
                         <TableRow key={event.id} className="table-row-hover">
                           <TableCell className="text-sm text-slate-600">
                             {formatDateTime(event.timestamp)}
@@ -694,6 +804,18 @@ export default function AuditDashboardPage() {
                       ))}
                     </TableBody>
                   </Table>
+                )}
+                {/* Load More Button */}
+                {hasMoreAssetEvents && assetEvents.length > 0 && (
+                  <div className="p-4 border-t border-slate-100 dark:border-slate-800 text-center">
+                    <Button
+                      variant="outline"
+                      onClick={loadMoreAssetEvents}
+                      disabled={loadingAssetEvents}
+                    >
+                      {loadingAssetEvents ? "Loading..." : `Load More (showing ${assetEvents.length})`}
+                    </Button>
+                  </div>
                 )}
               </div>
               </div>

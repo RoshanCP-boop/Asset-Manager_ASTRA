@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session, aliased, joinedload
-from sqlalchemy import select, func, case
+from sqlalchemy import select, func, case, or_
 
 from app import models, schemas
 from app.auth import hash_password
@@ -189,8 +189,15 @@ def list_asset_events(db: Session, asset_id: int) -> list[dict]:
     return out
 
 
-def list_all_asset_events(db: Session, limit: int = 100) -> list[dict]:
-    """Get all asset events across all assets, for audit purposes."""
+def list_all_asset_events(
+    db: Session,
+    limit: int = 100,
+    offset: int = 0,
+    search: str | None = None,
+    event_type: str | None = None,
+) -> list[dict]:
+    """Get all asset events across all assets, for audit purposes with optional filters."""
+    
     FromUser = aliased(models.User)
     ToUser = aliased(models.User)
     ActorUser = aliased(models.User)
@@ -207,9 +214,26 @@ def list_all_asset_events(db: Session, limit: int = 100) -> list[dict]:
         .outerjoin(FromUser, models.AssetEvent.from_user_id == FromUser.id)
         .outerjoin(ToUser, models.AssetEvent.to_user_id == ToUser.id)
         .outerjoin(ActorUser, models.AssetEvent.actor_user_id == ActorUser.id)
-        .order_by(models.AssetEvent.timestamp.desc())
-        .limit(limit)
     )
+    
+    # Filter by event type
+    if event_type:
+        stmt = stmt.where(models.AssetEvent.event_type == event_type)
+    
+    # Filter by search term (asset tag, user names, or notes)
+    if search:
+        search_pattern = f"%{search}%"
+        stmt = stmt.where(
+            or_(
+                models.Asset.asset_tag.ilike(search_pattern),
+                FromUser.name.ilike(search_pattern),
+                ToUser.name.ilike(search_pattern),
+                ActorUser.name.ilike(search_pattern),
+                models.AssetEvent.notes.ilike(search_pattern),
+            )
+        )
+    
+    stmt = stmt.order_by(models.AssetEvent.timestamp.desc()).offset(offset).limit(limit)
 
     rows = db.execute(stmt).all()
 
@@ -493,8 +517,15 @@ def add_user_event(
     return event
 
 
-def list_user_events(db: Session, limit: int = 100) -> list[schemas.UserEventRead]:
-    """Get recent user events with resolved user names."""
+def list_user_events(
+    db: Session,
+    limit: int = 100,
+    offset: int = 0,
+    search: str | None = None,
+    event_type: str | None = None,
+) -> list[schemas.UserEventRead]:
+    """Get recent user events with resolved user names and optional filters."""
+    
     TargetUser = aliased(models.User)
     ActorUser = aliased(models.User)
     
@@ -506,9 +537,24 @@ def list_user_events(db: Session, limit: int = 100) -> list[schemas.UserEventRea
         )
         .outerjoin(TargetUser, models.UserEvent.target_user_id == TargetUser.id)
         .outerjoin(ActorUser, models.UserEvent.actor_user_id == ActorUser.id)
-        .order_by(models.UserEvent.timestamp.desc())
-        .limit(limit)
     )
+    
+    # Filter by event type
+    if event_type:
+        stmt = stmt.where(models.UserEvent.event_type == event_type)
+    
+    # Filter by search term (target user name, actor name, or notes)
+    if search:
+        search_pattern = f"%{search}%"
+        stmt = stmt.where(
+            or_(
+                TargetUser.name.ilike(search_pattern),
+                ActorUser.name.ilike(search_pattern),
+                models.UserEvent.notes.ilike(search_pattern),
+            )
+        )
+    
+    stmt = stmt.order_by(models.UserEvent.timestamp.desc()).offset(offset).limit(limit)
     
     results = db.execute(stmt).all()
     

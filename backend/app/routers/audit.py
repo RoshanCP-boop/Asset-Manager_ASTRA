@@ -28,11 +28,14 @@ def get_audit_summary(
 )
 def get_user_events(
     limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    search: str | None = Query(None, description="Search by user name or notes"),
+    event_type: str | None = Query(None, description="Filter by event type"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.AUDITOR)),
 ):
     """Get user activity audit log. Admin and Auditor only."""
-    return crud.list_user_events(db, limit=limit)
+    return crud.list_user_events(db, limit=limit, offset=offset, search=search, event_type=event_type)
 
 
 @router.get(
@@ -41,8 +44,11 @@ def get_user_events(
 )
 def get_asset_events(
     limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    search: str | None = Query(None, description="Search by asset tag, user, or notes"),
+    event_type: str | None = Query(None, description="Filter by event type"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.AUDITOR)),
 ):
     """Get asset activity audit log. Admin and Auditor only."""
-    return crud.list_all_asset_events(db, limit=limit)
+    return crud.list_all_asset_events(db, limit=limit, offset=offset, search=search, event_type=event_type)
