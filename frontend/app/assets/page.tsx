@@ -590,7 +590,7 @@ export default function AssetsPage() {
               )}
 
               <Button variant="outline" onClick={loadAssets} disabled={refreshing} className="hover-lift active-scale">
-                <svg className={`w-4 h-4 mr-2 transition-transform ${refreshing ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 mr-2 transition-transform ${refreshing ? "animate-spin-reverse" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Refresh
@@ -1093,37 +1093,6 @@ export default function AssetsPage() {
               {/* Request list for admins/managers */}
               {canApproveRequests && (
                 <div className="space-y-4">
-                  {/* Option for admin to also make a request */}
-                  <div className="border-b pb-4 mb-4">
-                    <h3 className="text-sm font-medium text-slate-600 mb-2">Need to request an asset yourself?</h3>
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <select
-                          className="border rounded-lg px-3 py-2 text-sm flex-shrink-0"
-                          value={requestAssetType}
-                          onChange={(e) => setRequestAssetType(e.target.value as "HARDWARE" | "SOFTWARE")}
-                        >
-                          <option value="HARDWARE">Hardware</option>
-                          <option value="SOFTWARE">Software</option>
-                        </select>
-                        <input
-                          className="flex-1 border rounded-lg px-3 py-2 text-sm"
-                          placeholder="What do you need?"
-                          value={requestDescription}
-                          onChange={(e) => setRequestDescription(e.target.value)}
-                        />
-                        <Button 
-                          size="sm"
-                          className="btn-primary-gradient text-white"
-                          onClick={submitAssetRequest}
-                          disabled={submittingRequest}
-                        >
-                          Request
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Pending requests */}
                   <h3 className="text-sm font-medium text-slate-600">Pending Requests</h3>
                   {assetRequests.filter(r => r.status === "PENDING").length === 0 ? (
