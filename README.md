@@ -175,11 +175,145 @@ When the backend is running:
 
 ## Self-Hosting for Your Company
 
-1. Clone this repo to your server
-2. Configure Google OAuth (see above)
-3. Run `docker compose up -d`
-4. Point your domain to the server
-5. First person from your company domain to sign in becomes Admin
+Want to run ASTRA for your company? Here's a complete guide to deploy it on your own server.
+
+### Prerequisites
+
+- A server (VPS or on-premise) with Docker installed
+- A domain name (optional but recommended)
+- Google Cloud account for OAuth
+
+### Step 1: Set Up Your Server
+
+Any Linux server with Docker works. Popular options:
+- **DigitalOcean** ($6/mo) - https://digitalocean.com
+- **Hetzner** (€4/mo) - https://hetzner.com
+- **AWS EC2** (free tier available) - https://aws.amazon.com
+- **Your own hardware**
+
+Install Docker on your server:
+```bash
+# Ubuntu/Debian
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+```
+
+### Step 2: Clone the Repository
+
+```bash
+git clone https://github.com/RoshanCP-boop/asset-management.git
+cd asset-management
+```
+
+### Step 3: Configure Google OAuth
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project
+3. Go to **APIs & Services** → **OAuth consent screen**
+   - Choose **External**
+   - Fill in app name, support email
+   - Add your domain to authorized domains
+4. Go to **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID**
+   - Application type: **Web application**
+   - Authorized redirect URI: `https://yourdomain.com/auth/google/callback`
+   - (Or `http://your-server-ip:8000/auth/google/callback` if no domain)
+5. Copy the **Client ID** and **Client Secret**
+
+### Step 4: Configure Environment
+
+Create a `.env` file in the backend folder:
+```bash
+cp backend/.env.example backend/.env
+nano backend/.env
+```
+
+Add your credentials:
+```env
+DATABASE_URL=postgresql://asset_user:asset_pass@db:5432/asset_db
+GOOGLE_CLIENT_ID=your-client-id-here
+GOOGLE_CLIENT_SECRET=your-client-secret-here
+JWT_SECRET=generate-a-long-random-string-here
+FRONTEND_URL=https://yourdomain.com
+```
+
+Update `docker-compose.yml` if using a domain:
+```yaml
+backend:
+  environment:
+    FRONTEND_URL: https://yourdomain.com
+
+frontend:
+  environment:
+    NEXT_PUBLIC_API_URL: https://yourdomain.com:8000
+```
+
+### Step 5: Start the Application
+
+```bash
+docker compose up -d
+```
+
+Your app is now running:
+- Frontend: `http://your-server-ip:3000`
+- Backend: `http://your-server-ip:8000`
+
+### Step 6: Set Up Domain (Optional but Recommended)
+
+Point your domain's DNS to your server IP, then set up a reverse proxy like Nginx or Caddy:
+
+**Using Caddy (easiest, auto-HTTPS):**
+```bash
+# Install Caddy
+sudo apt install -y caddy
+
+# Edit Caddy config
+sudo nano /etc/caddy/Caddyfile
+```
+
+```
+yourdomain.com {
+    reverse_proxy localhost:3000
+}
+
+api.yourdomain.com {
+    reverse_proxy localhost:8000
+}
+```
+
+```bash
+sudo systemctl restart caddy
+```
+
+### Step 7: First Login
+
+1. Open your domain in a browser
+2. Click **Sign in with Google**
+3. The first person from your company domain becomes **Admin**
+4. Invite your team from the **Users** page
+
+### Updating
+
+To update to the latest version:
+```bash
+cd asset-management
+git pull
+docker compose down
+docker compose up -d --build
+```
+
+### Backup
+
+Your data is stored in a Docker volume. To backup:
+```bash
+docker exec asset_mgmt_db pg_dump -U asset_user asset_db > backup.sql
+```
+
+To restore:
+```bash
+cat backup.sql | docker exec -i asset_mgmt_db psql -U asset_user asset_db
+```
+
+---
 
 ## License
 
