@@ -247,7 +247,7 @@ export default function UserDetailPage() {
 
   if (error || !user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-6">
         <Card className="max-w-md shadow-xl border-0">
           <CardContent className="pt-6 text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -267,9 +267,9 @@ export default function UserDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm">
+      <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#2a2a2a] shadow-sm">
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -277,7 +277,7 @@ export default function UserDetailPage() {
                 {user.name.charAt(0).toUpperCase()}
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-800 dark:text-white">{user.name}</h1>
+                <h1 className="text-2xl font-bold text-slate-800 dark:text-[#f0f6fc]">{user.name}</h1>
                 <p className="text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
               </div>
             </div>
@@ -303,8 +303,8 @@ export default function UserDetailPage() {
         </div>
       )}
       {/* User Info Card */}
-      <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-        <CardHeader className="border-b border-slate-100 dark:border-slate-800">
+      <Card className="shadow-lg border-0 bg-white/80 dark:bg-[#000000] backdrop-blur-sm">
+        <CardHeader className="border-b border-slate-100 dark:border-[#2a2a2a]">
           <CardTitle className="flex items-center gap-2">
             <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -314,17 +314,17 @@ export default function UserDetailPage() {
         </CardHeader>
         <CardContent className="pt-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+            <div className="p-3 bg-slate-50 dark:bg-[#21262d] rounded-lg">
               <p className="text-xs text-slate-500 uppercase tracking-wide">ID</p>
-              <p className="font-semibold text-slate-800 dark:text-white">{user.id}</p>
+              <p className="font-semibold text-slate-800 dark:text-[#f0f6fc]">{user.id}</p>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+            <div className="p-3 bg-slate-50 dark:bg-[#21262d] rounded-lg">
               <p className="text-xs text-slate-500 uppercase tracking-wide">Name</p>
-              <p className="font-semibold text-slate-800 dark:text-white">{user.name}</p>
+              <p className="font-semibold text-slate-800 dark:text-[#f0f6fc]">{user.name}</p>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+            <div className="p-3 bg-slate-50 dark:bg-[#21262d] rounded-lg">
               <p className="text-xs text-slate-500 uppercase tracking-wide">Role</p>
-              <p className="font-semibold text-slate-800 dark:text-white">
+              <p className="font-semibold text-slate-800 dark:text-[#f0f6fc]">
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                   user.role === "ADMIN" ? "bg-purple-100 text-purple-800" :
                   user.role === "MANAGER" ? "bg-blue-100 text-blue-800" :
@@ -335,7 +335,7 @@ export default function UserDetailPage() {
                 </span>
               </p>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+            <div className="p-3 bg-slate-50 dark:bg-[#21262d] rounded-lg">
               <p className="text-xs text-slate-500 uppercase tracking-wide">Status</p>
               <p className="font-semibold">
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -507,9 +507,9 @@ export default function UserDetailPage() {
       )}
 
       {/* Event History */}
-      <Card className="shadow-xl border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-        <CardHeader className="border-b border-slate-100 dark:border-slate-800">
-          <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white flex items-center gap-2">
+      <Card className="shadow-xl border-0 bg-white/80 dark:bg-[#000000] backdrop-blur-sm">
+        <CardHeader className="border-b border-slate-100 dark:border-[#2a2a2a]">
+          <CardTitle className="text-lg font-semibold text-slate-800 dark:text-[#f0f6fc] flex items-center gap-2">
             <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -544,7 +544,7 @@ export default function UserDetailPage() {
                     
                     return (
                       <TableRow key={event.id} className="table-row-hover">
-                        <TableCell className="text-sm text-slate-600">
+                        <TableCell className="text-sm text-slate-600 dark:text-[#dcddde]">
                           {formatDateTime(event.timestamp)}
                         </TableCell>
                         <TableCell>

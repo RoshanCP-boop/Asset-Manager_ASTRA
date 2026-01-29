@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
 import { apiFetch, getErrorMessage } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { formatDateTime, formatDate } from "@/lib/date";
@@ -230,6 +231,9 @@ export default function AssetDetailPage() {
 
   // Update form state
   const [editMode, setEditMode] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [stickerSize, setStickerSize] = useState<"small" | "medium" | "large">("medium");
+  const qrRef = useRef<HTMLDivElement>(null);
   const [editManufacturer, setEditManufacturer] = useState("");
   const [editModel, setEditModel] = useState("");
   const [editSerialNumber, setEditSerialNumber] = useState("");
@@ -513,13 +517,13 @@ export default function AssetDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm">
+      <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#2a2a2a] shadow-sm">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" onClick={() => router.back()} className="text-slate-600 hover:text-slate-800">
+              <Button variant="outline" onClick={() => router.back()} className="transition-all hover:-translate-y-0.5">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
@@ -527,23 +531,34 @@ export default function AssetDetailPage() {
               </Button>
               <div className="h-6 w-px bg-slate-200" />
               <div>
-                <h1 className="text-xl font-bold text-slate-800 dark:text-white">{asset.asset_tag}</h1>
+                <h1 className="text-xl font-bold text-slate-800 dark:text-[#f0f6fc]">{asset.asset_tag}</h1>
                 <p className="text-xs text-slate-500">
                   {asset.asset_type === "SOFTWARE" ? "Subscription" : asset.category}
                 </p>
               </div>
             </div>
-            {!editMode && canEdit && (
+            <div className="flex items-center gap-2">
               <Button 
-                onClick={startEdit}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-500/20 transition-all hover:shadow-lg hover:-translate-y-0.5"
+                variant="outline"
+                onClick={() => setShowQRModal(true)}
+                title="Show QR Code"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h2M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                 </svg>
-                Edit Asset
               </Button>
-            )}
+              {!editMode && canEdit && (
+                <Button 
+                  onClick={startEdit}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-500/20 transition-all hover:shadow-lg hover:-translate-y-0.5"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit Asset
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -560,8 +575,8 @@ export default function AssetDetailPage() {
         </div>
       )}
 
-      <Card className="shadow-xl border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-        <CardHeader className="border-b border-slate-100 dark:border-slate-800">
+      <Card className="shadow-xl border border-slate-200 dark:border-[#2a2a2a] bg-white/90 dark:bg-[#000000] backdrop-blur-sm">
+        <CardHeader className="border-b border-slate-100 dark:border-[#2a2a2a]">
           <CardTitle className="flex items-center gap-2">
             <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -873,8 +888,8 @@ export default function AssetDetailPage() {
                   <div className="space-y-1">
                     <label className="text-sm font-medium">Extend Warranty</label>
                     {isMaxed ? (
-                      <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-md border">
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                      <div className="p-3 bg-slate-100 dark:bg-[#1a1a1a] rounded-md border">
+                        <p className="text-sm text-slate-600 dark:text-[#96989d]">
                           Maximum warranty extension reached ({maxExtension} months)
                         </p>
                       </div>
@@ -941,41 +956,100 @@ export default function AssetDetailPage() {
             <CardTitle>Assign {asset.asset_type === "SOFTWARE" ? "Seat" : "Asset"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {asset.asset_type === "SOFTWARE" && (
-              <p className="text-sm text-muted-foreground">
-                Seats available: {(asset.seats_total ?? 0) - (asset.seats_used ?? 0)} / {asset.seats_total ?? "∞"}
-              </p>
+            {asset.asset_type === "SOFTWARE" ? (
+              // Software - show seats info
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Seats available: {(asset.seats_total ?? 0) - (asset.seats_used ?? 0)} / {asset.seats_total ?? "∞"}
+                </p>
+
+                {(asset.seats_total === null || (asset.seats_total ?? 0) - (asset.seats_used ?? 0) > 0) ? (
+                  <>
+                    <div className="space-y-1">
+                      <div className="text-sm">Assign to</div>
+                      <select
+                        className="w-full border rounded-md px-3 py-2 bg-transparent"
+                        value={assignUserId}
+                        onChange={(e) =>
+                          setAssignUserId(e.target.value === "" ? "" : Number(e.target.value))
+                        }
+                      >
+                        <option value="">Select user…</option>
+                        {users
+                          .filter((u) => u.is_active)
+                          .map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.name} ({u.email})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+
+                    <Input
+                      placeholder="Notes (optional)"
+                      value={assignNotes}
+                      onChange={(e) => setAssignNotes(e.target.value)}
+                    />
+
+                    <Button onClick={assignAsset} disabled={busy || !assignUserId}>
+                      {busy ? "Working…" : "Assign Seat"}
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    All seats are currently in use.
+                  </p>
+                )}
+              </>
+            ) : (
+              // Hardware - show assignment status
+              <>
+                {isAssigned && (
+                  <p className="text-sm">
+                    <b>Currently assigned to:</b>{" "}
+                    {users.find((u) => u.id === asset.assigned_to_user_id)?.name ?? `User #${asset.assigned_to_user_id}`}
+                  </p>
+                )}
+
+                {!isAssigned ? (
+                  <>
+                    <div className="space-y-1">
+                      <div className="text-sm">Assign to</div>
+                      <select
+                        className="w-full border rounded-md px-3 py-2 bg-transparent"
+                        value={assignUserId}
+                        onChange={(e) =>
+                          setAssignUserId(e.target.value === "" ? "" : Number(e.target.value))
+                        }
+                      >
+                        <option value="">Select user…</option>
+                        {users
+                          .filter((u) => u.is_active)
+                          .map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.name} ({u.email})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+
+                    <Input
+                      placeholder="Notes (optional)"
+                      value={assignNotes}
+                      onChange={(e) => setAssignNotes(e.target.value)}
+                    />
+
+                    <Button onClick={assignAsset} disabled={busy || !assignUserId}>
+                      {busy ? "Working…" : "Assign"}
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Return this asset before reassigning.
+                  </p>
+                )}
+              </>
             )}
-
-            <div className="space-y-1">
-              <div className="text-sm">Assign to</div>
-              <select
-                className="w-full border rounded-md px-3 py-2 bg-transparent"
-                value={assignUserId}
-                onChange={(e) =>
-                  setAssignUserId(e.target.value === "" ? "" : Number(e.target.value))
-                }
-              >
-                <option value="">Select user…</option>
-                {users
-                  .filter((u) => u.is_active)
-                  .map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} ({u.email})
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <Input
-              placeholder="Notes (optional)"
-              value={assignNotes}
-              onChange={(e) => setAssignNotes(e.target.value)}
-            />
-
-            <Button onClick={assignAsset} disabled={busy || !assignUserId}>
-              {busy ? "Working…" : asset.asset_type === "SOFTWARE" ? "Assign Seat" : "Assign"}
-            </Button>
           </CardContent>
         </Card>
       )}
@@ -1070,9 +1144,9 @@ export default function AssetDetailPage() {
       )}
 
       {/* Events */}
-      <Card className="shadow-xl border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-        <CardHeader className="border-b border-slate-100 dark:border-slate-800">
-          <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white flex items-center gap-2">
+      <Card className="shadow-xl border border-slate-200 dark:border-[#2a2a2a] bg-white/90 dark:bg-[#000000] backdrop-blur-sm">
+        <CardHeader className="border-b border-slate-100 dark:border-[#2a2a2a]">
+          <CardTitle className="text-lg font-semibold text-slate-800 dark:text-[#f0f6fc] flex items-center gap-2">
             <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -1101,7 +1175,7 @@ export default function AssetDetailPage() {
                 <TableBody>
                   {events.map((e) => (
                     <TableRow key={e.id} className="table-row-hover">
-                      <TableCell className="text-sm text-slate-600">
+                      <TableCell className="text-sm text-slate-600 dark:text-[#dcddde]">
                         {formatDateTime(e.timestamp)}
                       </TableCell>
                       <TableCell>
@@ -1130,7 +1204,7 @@ export default function AssetDetailPage() {
                           <span className="text-slate-400">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-sm text-slate-600">
+                      <TableCell className="text-sm text-slate-600 dark:text-[#dcddde]">
                         {e.actor_user_name || "-"}
                       </TableCell>
                       <TableCell className="text-sm text-slate-500 max-w-md">
@@ -1149,6 +1223,169 @@ export default function AssetDetailPage() {
         </CardContent>
       </Card>
       </main>
+
+      {/* QR Code Modal */}
+      {showQRModal && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black/50 z-50"
+            onClick={() => setShowQRModal(false)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl max-w-sm w-full p-6 animate-scale-in">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-[#f0f6fc]">Asset QR Code</h3>
+                <button 
+                  onClick={() => setShowQRModal(false)}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Sticker Size Selector */}
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <span className="text-xs text-slate-500">Size:</span>
+                {(["small", "medium", "large"] as const).map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setStickerSize(size)}
+                    className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                      stickerSize === size 
+                        ? "bg-blue-600 text-white" 
+                        : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-[#dcddde] hover:bg-slate-200 dark:hover:bg-slate-600"
+                    }`}
+                  >
+                    {size === "small" ? "1\"" : size === "medium" ? "1.5\"" : "2\""}
+                  </button>
+                ))}
+              </div>
+
+              <div ref={qrRef} className="flex flex-col items-center p-4 bg-white rounded-lg border-2 border-dashed border-slate-200">
+                <QRCodeSVG 
+                  value={typeof window !== 'undefined' ? `${window.location.origin}/assets/${asset.id}` : `/assets/${asset.id}`}
+                  size={stickerSize === "small" ? 80 : stickerSize === "medium" ? 120 : 160}
+                  level="M"
+                  includeMargin={false}
+                />
+                <p className={`mt-2 font-bold text-slate-800 ${stickerSize === "small" ? "text-[10px]" : stickerSize === "medium" ? "text-xs" : "text-sm"}`}>
+                  {asset.asset_tag}
+                </p>
+                {stickerSize !== "small" && (
+                  <p className={`text-slate-500 ${stickerSize === "medium" ? "text-[9px]" : "text-[10px]"}`}>
+                    {asset.category || asset.subscription || "Asset"}
+                  </p>
+                )}
+              </div>
+              <p className="text-[10px] text-center text-slate-400 mt-2">
+                Print on sticker paper • {stickerSize === "small" ? "1×1 inch" : stickerSize === "medium" ? "1.5×1.5 inch" : "2×2 inch"}
+              </p>
+
+              <div className="flex gap-2 mt-4">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    const svg = qrRef.current?.querySelector('svg');
+                    if (svg) {
+                      const svgData = new XMLSerializer().serializeToString(svg);
+                      const canvas = document.createElement('canvas');
+                      const ctx = canvas.getContext('2d');
+                      const img = new Image();
+                      img.onload = () => {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx?.drawImage(img, 0, 0);
+                        const a = document.createElement('a');
+                        a.download = `${asset.asset_tag}-qr.png`;
+                        a.href = canvas.toDataURL('image/png');
+                        a.click();
+                      };
+                      img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+                    }
+                  }}
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download
+                </Button>
+                <Button 
+                  className="flex-1"
+                  onClick={() => {
+                    const printWindow = window.open('', '_blank');
+                    if (printWindow) {
+                      const qrSize = stickerSize === "small" ? 80 : stickerSize === "medium" ? 120 : 160;
+                      const stickerWidth = stickerSize === "small" ? "1in" : stickerSize === "medium" ? "1.5in" : "2in";
+                      const fontSize = stickerSize === "small" ? "8px" : stickerSize === "medium" ? "10px" : "12px";
+                      const subFontSize = stickerSize === "small" ? "6px" : stickerSize === "medium" ? "8px" : "9px";
+                      
+                      printWindow.document.write(`
+                        <html>
+                          <head>
+                            <title>Asset Sticker - ${asset.asset_tag}</title>
+                            <style>
+                              @page { size: auto; margin: 0.25in; }
+                              body { 
+                                margin: 0; 
+                                padding: 0;
+                                font-family: system-ui, -apple-system, sans-serif; 
+                              }
+                              .sticker {
+                                width: ${stickerWidth};
+                                padding: 4px;
+                                text-align: center;
+                                border: 1px dashed #ccc;
+                                box-sizing: border-box;
+                              }
+                              .sticker svg {
+                                width: ${qrSize}px;
+                                height: ${qrSize}px;
+                                display: block;
+                                margin: 0 auto;
+                              }
+                              .tag {
+                                font-weight: 700;
+                                font-size: ${fontSize};
+                                margin: 4px 0 2px 0;
+                                color: #1a1a1a;
+                              }
+                              .info {
+                                font-size: ${subFontSize};
+                                color: #666;
+                                margin: 0;
+                              }
+                              @media print {
+                                .sticker { border: none; }
+                              }
+                            </style>
+                          </head>
+                          <body>
+                            <div class="sticker">
+                              ${qrRef.current?.querySelector('svg')?.outerHTML || ''}
+                              <p class="tag">${asset.asset_tag}</p>
+                              ${stickerSize !== "small" ? `<p class="info">${asset.category || asset.subscription || "Asset"}</p>` : ''}
+                            </div>
+                          </body>
+                        </html>
+                      `);
+                      printWindow.document.close();
+                      printWindow.print();
+                    }
+                  }}
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  Print Sticker
+                </Button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

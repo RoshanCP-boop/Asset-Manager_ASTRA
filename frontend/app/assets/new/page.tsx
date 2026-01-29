@@ -205,7 +205,7 @@ export default function NewAssetPage() {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-6">
       <div className="max-w-2xl mx-auto">
         {/* Back button */}
         <Button
@@ -219,8 +219,8 @@ export default function NewAssetPage() {
           Back to Assets
         </Button>
 
-        <Card className="shadow-xl border-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <CardHeader className="border-b border-slate-100 dark:border-slate-800">
+        <Card className="shadow-xl dark:shadow-2xl dark:shadow-black/50 border border-slate-200 dark:border-[#2a2a2a] bg-white/90 dark:bg-[#000000] backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <CardHeader className="border-b border-slate-100 dark:border-[#2a2a2a]">
             <CardTitle className="flex items-center gap-2 text-xl">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

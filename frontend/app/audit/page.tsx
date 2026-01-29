@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch, getErrorMessage } from "@/lib/api";
 import { getToken, clearToken } from "@/lib/auth";
+import { getTheme, setTheme, type ThemeMode } from "@/lib/theme";
 import { formatDateTime } from "@/lib/date";
 
 import {
@@ -118,6 +119,12 @@ export default function AuditDashboardPage() {
   const defaultTab = initialTab === "users" ? "users" : initialTab === "assets" ? "assets" : "summary";
   const [activeTab, setActiveTab] = useState<"summary" | "users" | "assets">(defaultTab);
   const [refreshing, setRefreshing] = useState(false);
+  const [themeMode, setThemeMode] = useState<ThemeMode>("light");
+
+  // Initialize theme state on mount
+  useEffect(() => {
+    setThemeMode(getTheme());
+  }, []);
 
   // Filter state for user events
   const [userEventSearch, setUserEventSearch] = useState("");
@@ -389,10 +396,10 @@ export default function AuditDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="loading-spinner w-12 h-12" />
-          <p className="text-slate-600 dark:text-slate-400">Loading audit dashboard...</p>
+          <p className="text-slate-600 dark:text-[#96989d]">Loading audit dashboard...</p>
         </div>
       </div>
     );
@@ -400,7 +407,7 @@ export default function AuditDashboardPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center">
         <Card className="max-w-md mx-auto">
           <CardContent className="p-6">
             <p className="text-red-600 mb-4">{error}</p>
@@ -412,9 +419,9 @@ export default function AuditDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white/90 dark:bg-[#0a0a0a]/90 backdrop-blur-md border-b border-slate-200 dark:border-[#2a2a2a] shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -425,7 +432,7 @@ export default function AuditDashboardPage() {
                   </svg>
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-slate-800 dark:text-white">Audit Dashboard</h1>
+                  <h1 className="text-xl font-bold text-slate-800 dark:text-[#f0f6fc]">Audit Dashboard</h1>
                   <p className="text-sm text-slate-500">System activity & compliance</p>
                 </div>
               </Link>
@@ -437,11 +444,11 @@ export default function AuditDashboardPage() {
                 onClick={handleRefresh}
                 disabled={refreshing}
                 className="hover-lift"
+                title="Refresh"
               >
-                <svg className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin-reverse" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 ${refreshing ? "animate-spin-reverse" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                Refresh
               </Button>
 
               <Link href="/assets">
@@ -461,6 +468,27 @@ export default function AuditDashboardPage() {
                   Users
                 </Button>
               </Link>
+
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  const next: ThemeMode = themeMode === "light" ? "dark" : "light";
+                  setTheme(next);
+                  setThemeMode(next);
+                }}
+                className="text-slate-600 hover:text-slate-800 dark:text-[#96989d] dark:hover:text-[#dcddde] transition-colors"
+                title={themeMode === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              >
+                {themeMode === "dark" ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                )}
+              </Button>
 
               <Button
                 variant="ghost"
@@ -486,7 +514,7 @@ export default function AuditDashboardPage() {
         {summary && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Users Card */}
-            <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <Card className="shadow-lg border border-slate-200 dark:border-[#2a2a2a] bg-white/90 dark:bg-[#000000] backdrop-blur-sm">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
@@ -495,12 +523,12 @@ export default function AuditDashboardPage() {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Total Users</p>
-                    <p className="text-2xl font-bold text-slate-800">{summary.total_users}</p>
-                    <p className="text-xs text-slate-400">
-                      <span className="text-green-600">{summary.active_users} active</span>
+                    <p className="text-sm text-slate-500 dark:text-[#96989d]">Total Users</p>
+                    <p className="text-2xl font-bold text-slate-800 dark:text-[#f0f6fc]">{summary.total_users}</p>
+                    <p className="text-xs text-slate-400 dark:text-[#6e7681]">
+                      <span className="text-green-600 dark:text-green-400">{summary.active_users} active</span>
                       {summary.inactive_users > 0 && (
-                        <span className="text-red-500 ml-2">{summary.inactive_users} inactive</span>
+                        <span className="text-red-500 dark:text-red-400 ml-2">{summary.inactive_users} inactive</span>
                       )}
                     </p>
                   </div>
@@ -509,7 +537,7 @@ export default function AuditDashboardPage() {
             </Card>
 
             {/* Assets Card */}
-            <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <Card className="shadow-lg border border-slate-200 dark:border-[#2a2a2a] bg-white/90 dark:bg-[#000000] backdrop-blur-sm">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-lg">
@@ -518,11 +546,11 @@ export default function AuditDashboardPage() {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Total Assets</p>
-                    <p className="text-2xl font-bold text-slate-800">{summary.total_assets}</p>
-                    <p className="text-xs text-slate-400">
-                      <span className="text-blue-600">{summary.hardware_count} HW</span>
-                      <span className="text-purple-600 ml-2">{summary.software_count} SW</span>
+                    <p className="text-sm text-slate-500 dark:text-[#96989d]">Total Assets</p>
+                    <p className="text-2xl font-bold text-slate-800 dark:text-[#f0f6fc]">{summary.total_assets}</p>
+                    <p className="text-xs text-slate-400 dark:text-[#6e7681]">
+                      <span className="text-blue-600 dark:text-blue-400">{summary.hardware_count} HW</span>
+                      <span className="text-purple-600 dark:text-purple-400 ml-2">{summary.software_count} SW</span>
                     </p>
                   </div>
                 </div>
@@ -530,7 +558,7 @@ export default function AuditDashboardPage() {
             </Card>
 
             {/* User Activity Card */}
-            <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <Card className="shadow-lg border border-slate-200 dark:border-[#2a2a2a] bg-white/90 dark:bg-[#000000] backdrop-blur-sm">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg">
@@ -539,11 +567,11 @@ export default function AuditDashboardPage() {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">User Events</p>
-                    <p className="text-2xl font-bold text-slate-800">{summary.user_events_week}</p>
-                    <p className="text-xs text-slate-400">
-                      <span className="text-emerald-600">{summary.user_events_today} today</span>
-                      <span className="text-slate-400 ml-2">/ {summary.user_events_week} this week</span>
+                    <p className="text-sm text-slate-500 dark:text-[#96989d]">User Events</p>
+                    <p className="text-2xl font-bold text-slate-800 dark:text-[#f0f6fc]">{summary.user_events_week}</p>
+                    <p className="text-xs text-slate-400 dark:text-[#6e7681]">
+                      <span className="text-emerald-600 dark:text-emerald-400">{summary.user_events_today} today</span>
+                      <span className="text-slate-400 dark:text-[#6e7681] ml-2">/ {summary.user_events_week} this week</span>
                     </p>
                   </div>
                 </div>
@@ -551,7 +579,7 @@ export default function AuditDashboardPage() {
             </Card>
 
             {/* Asset Activity Card */}
-            <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <Card className="shadow-lg border border-slate-200 dark:border-[#2a2a2a] bg-white/90 dark:bg-[#000000] backdrop-blur-sm">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg">
@@ -560,11 +588,11 @@ export default function AuditDashboardPage() {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Asset Events</p>
-                    <p className="text-2xl font-bold text-slate-800">{summary.asset_events_week}</p>
-                    <p className="text-xs text-slate-400">
-                      <span className="text-amber-600">{summary.asset_events_today} today</span>
-                      <span className="text-slate-400 ml-2">/ {summary.asset_events_week} this week</span>
+                    <p className="text-sm text-slate-500 dark:text-[#96989d]">Asset Events</p>
+                    <p className="text-2xl font-bold text-slate-800 dark:text-[#f0f6fc]">{summary.asset_events_week}</p>
+                    <p className="text-xs text-slate-400 dark:text-[#6e7681]">
+                      <span className="text-amber-600 dark:text-amber-400">{summary.asset_events_today} today</span>
+                      <span className="text-slate-400 dark:text-[#6e7681] ml-2">/ {summary.asset_events_week} this week</span>
                     </p>
                   </div>
                 </div>
@@ -575,9 +603,9 @@ export default function AuditDashboardPage() {
 
         {/* Asset Status Breakdown */}
         {summary && (
-          <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-            <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-4">
-              <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white flex items-center gap-2">
+          <Card className="shadow-lg border border-slate-200 dark:border-[#2a2a2a] bg-white/90 dark:bg-[#000000] backdrop-blur-sm">
+            <CardHeader className="border-b border-slate-100 dark:border-[#2a2a2a] pb-4">
+              <CardTitle className="text-lg font-semibold text-slate-800 dark:text-[#f0f6fc] flex items-center gap-2">
                 <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
@@ -586,17 +614,17 @@ export default function AuditDashboardPage() {
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-3 gap-6">
-                <div className="text-center p-4 bg-green-50 rounded-xl">
-                  <p className="text-3xl font-bold text-green-600">{summary.in_stock_assets}</p>
-                  <p className="text-sm text-green-700 mt-1">In Stock</p>
+                <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-transparent dark:border-green-800/30">
+                  <p className="text-3xl font-bold text-green-600 dark:text-green-400">{summary.in_stock_assets}</p>
+                  <p className="text-sm text-green-700 dark:text-green-300 mt-1">In Stock</p>
                 </div>
-                <div className="text-center p-4 bg-blue-50 rounded-xl">
-                  <p className="text-3xl font-bold text-blue-600">{summary.assigned_assets}</p>
-                  <p className="text-sm text-blue-700 mt-1">Assigned</p>
+                <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-transparent dark:border-blue-800/30">
+                  <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{summary.assigned_assets}</p>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">Assigned</p>
                 </div>
-                <div className="text-center p-4 bg-slate-50 rounded-xl">
-                  <p className="text-3xl font-bold text-slate-600">{summary.retired_assets}</p>
-                  <p className="text-sm text-slate-700 mt-1">Retired</p>
+                <div className="text-center p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-transparent dark:border-slate-700/30">
+                  <p className="text-3xl font-bold text-slate-600 dark:text-slate-300">{summary.retired_assets}</p>
+                  <p className="text-sm text-slate-700 dark:text-slate-400 mt-1">Retired</p>
                 </div>
               </div>
             </CardContent>
@@ -604,19 +632,19 @@ export default function AuditDashboardPage() {
         )}
 
         {/* Tabs for Activity Logs */}
-        <Card className="shadow-xl border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-          <CardHeader className="border-b border-slate-100 dark:border-slate-800">
+        <Card className="shadow-xl border border-slate-200 dark:border-[#2a2a2a] bg-white/90 dark:bg-[#000000] backdrop-blur-sm">
+          <CardHeader className="border-b border-slate-100 dark:border-[#2a2a2a]">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white">
+              <CardTitle className="text-lg font-semibold text-slate-800 dark:text-[#f0f6fc]">
                 Activity Logs
               </CardTitle>
-              <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+              <div className="flex gap-1 p-1 bg-slate-100 dark:bg-[#1a1a1a] rounded-lg border dark:border-[#2a2a2a]">
                 <button
                   onClick={() => setActiveTab("users")}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
                     activeTab === "users"
-                      ? "bg-white dark:bg-slate-700 text-indigo-600 shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
+                      ? "bg-white dark:bg-[#5865f2] text-indigo-600 dark:text-white shadow-sm"
+                      : "text-slate-600 dark:text-[#96989d] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#2a2a2a]"
                   }`}
                 >
                   User Events ({userEvents.length})
@@ -625,8 +653,8 @@ export default function AuditDashboardPage() {
                   onClick={() => setActiveTab("assets")}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
                     activeTab === "assets"
-                      ? "bg-white dark:bg-slate-700 text-indigo-600 shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
+                      ? "bg-white dark:bg-[#5865f2] text-indigo-600 dark:text-white shadow-sm"
+                      : "text-slate-600 dark:text-[#96989d] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#2a2a2a]"
                   }`}
                 >
                   Asset Events ({assetEvents.length})
@@ -638,7 +666,7 @@ export default function AuditDashboardPage() {
             {activeTab === "users" && (
               <div>
                 {/* Filters */}
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap gap-3 items-center">
+                <div className="p-4 border-b border-slate-100 dark:border-[#2a2a2a] flex flex-wrap gap-3 items-center">
                   <Input
                     type="text"
                     placeholder="Search by user or notes..."
@@ -649,11 +677,11 @@ export default function AuditDashboardPage() {
                   <select
                     value={userEventTypeFilter}
                     onChange={(e) => handleUserEventTypeChange(e.target.value)}
-                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    className="h-10 rounded-md border border-slate-300 dark:border-[#2a2a2a] bg-white dark:bg-[#000000] text-slate-800 dark:text-[#dcddde] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#58a6ff]/30"
                   >
-                    <option value="">All Event Types</option>
+                    <option value="" className="bg-white dark:bg-[#0a0a0a]">All Event Types</option>
                     {USER_EVENT_TYPES.map((type) => (
-                      <option key={type} value={type}>
+                      <option key={type} value={type} className="bg-white dark:bg-[#0a0a0a]">
                         {type.replace(/_/g, " ")}
                       </option>
                     ))}
@@ -715,7 +743,7 @@ export default function AuditDashboardPage() {
                     <TableBody>
                       {userEvents.map((event) => (
                         <TableRow key={event.id} className="table-row-hover">
-                          <TableCell className="text-sm text-slate-600">
+                          <TableCell className="text-sm text-slate-600 dark:text-[#dcddde]">
                             {formatDateTime(event.timestamp)}
                           </TableCell>
                           <TableCell>
@@ -723,24 +751,24 @@ export default function AuditDashboardPage() {
                               {event.event_type.replace(/_/g, " ")}
                             </span>
                           </TableCell>
-                          <TableCell className="font-medium">
+                          <TableCell className="font-medium text-slate-800 dark:text-white">
                             {event.target_user_name || "-"}
                           </TableCell>
                           <TableCell className="text-sm">
                             <div>
                               {event.old_value && event.new_value && (
-                                <span className="text-slate-500">
+                                <span className="text-slate-500 dark:text-[#96989d]">
                                   {event.old_value} → {event.new_value}
                                 </span>
                               )}
                               {event.notes && (
-                                <p className="text-slate-500 text-xs mt-0.5 max-w-xs truncate" title={event.notes}>
+                                <p className="text-slate-500 dark:text-[#96989d] text-xs mt-0.5 max-w-xs truncate" title={event.notes}>
                                   {event.notes}
                                 </p>
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="text-sm text-slate-600">
+                          <TableCell className="text-sm text-slate-600 dark:text-[#dcddde]">
                             {event.actor_user_name || "-"}
                           </TableCell>
                         </TableRow>
@@ -750,7 +778,7 @@ export default function AuditDashboardPage() {
                 )}
                 {/* Load More Button */}
                 {hasMoreUserEvents && userEvents.length > 0 && (
-                  <div className="p-4 border-t border-slate-100 dark:border-slate-800 text-center">
+                  <div className="p-4 border-t border-slate-100 dark:border-[#2a2a2a] text-center">
                     <Button
                       variant="outline"
                       onClick={loadMoreUserEvents}
@@ -767,7 +795,7 @@ export default function AuditDashboardPage() {
             {activeTab === "assets" && (
               <div>
                 {/* Filters */}
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap gap-3 items-center">
+                <div className="p-4 border-b border-slate-100 dark:border-[#2a2a2a] flex flex-wrap gap-3 items-center">
                   <Input
                     type="text"
                     placeholder="Search by asset, user, or notes..."
@@ -778,11 +806,11 @@ export default function AuditDashboardPage() {
                   <select
                     value={assetEventTypeFilter}
                     onChange={(e) => handleAssetEventTypeChange(e.target.value)}
-                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    className="h-10 rounded-md border border-slate-300 dark:border-[#2a2a2a] bg-white dark:bg-[#000000] text-slate-800 dark:text-[#dcddde] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#58a6ff]/30"
                   >
-                    <option value="">All Event Types</option>
+                    <option value="" className="bg-white dark:bg-[#0a0a0a]">All Event Types</option>
                     {ASSET_EVENT_TYPES.map((type) => (
-                      <option key={type} value={type}>
+                      <option key={type} value={type} className="bg-white dark:bg-[#0a0a0a]">
                         {type.replace(/_/g, " ")}
                       </option>
                     ))}
@@ -844,13 +872,13 @@ export default function AuditDashboardPage() {
                     <TableBody>
                       {assetEvents.map((event) => (
                         <TableRow key={event.id} className="table-row-hover">
-                          <TableCell className="text-sm text-slate-600">
+                          <TableCell className="text-sm text-slate-600 dark:text-[#dcddde]">
                             {formatDateTime(event.timestamp)}
                           </TableCell>
                           <TableCell>
                             <Link
                               href={`/assets/${event.asset_id}`}
-                              className="text-indigo-600 hover:text-indigo-800 font-medium"
+                              className="text-indigo-600 hover:text-indigo-800 dark:text-[#5865f2] dark:hover:text-[#7983f5] font-medium"
                             >
                               {event.asset_tag}
                             </Link>
@@ -864,29 +892,29 @@ export default function AuditDashboardPage() {
                             <div className="flex flex-col gap-0.5">
                               {/* User info for ASSIGN/RETURN events */}
                               {event.from_user_name && (
-                                <span className="text-slate-500">
-                                  From: <span className="font-medium text-slate-700">{event.from_user_name}</span>
+                                <span className="text-slate-500 dark:text-[#96989d]">
+                                  From: <span className="font-medium text-slate-700 dark:text-white">{event.from_user_name}</span>
                                 </span>
                               )}
                               {event.to_user_name && (
-                                <span className="text-slate-500">
-                                  To: <span className="font-medium text-slate-700">{event.to_user_name}</span>
+                                <span className="text-slate-500 dark:text-[#96989d]">
+                                  To: <span className="font-medium text-slate-700 dark:text-white">{event.to_user_name}</span>
                                 </span>
                               )}
                               {/* Location info for MOVE events */}
                               {event.event_type === "MOVE" && (
-                                <span className="text-purple-600">
+                                <span className="text-purple-600 dark:text-purple-400">
                                   {event.from_location_name || "(none)"} → {event.to_location_name || "(none)"}
                                 </span>
                               )}
                               {event.notes && event.event_type !== "MOVE" && (
-                                <p className="text-slate-400 text-xs truncate max-w-xs" title={event.notes}>
+                                <p className="text-slate-400 dark:text-[#96989d] text-xs truncate max-w-xs" title={event.notes}>
                                   {event.notes}
                                 </p>
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="text-sm text-slate-600">
+                          <TableCell className="text-sm text-slate-600 dark:text-[#dcddde]">
                             {event.actor_user_name || "-"}
                           </TableCell>
                         </TableRow>
@@ -896,7 +924,7 @@ export default function AuditDashboardPage() {
                 )}
                 {/* Load More Button */}
                 {hasMoreAssetEvents && assetEvents.length > 0 && (
-                  <div className="p-4 border-t border-slate-100 dark:border-slate-800 text-center">
+                  <div className="p-4 border-t border-slate-100 dark:border-[#2a2a2a] text-center">
                     <Button
                       variant="outline"
                       onClick={loadMoreAssetEvents}

@@ -156,3 +156,47 @@ def get_asset_events(
             raise HTTPException(status_code=403, detail="Not enough permissions")
 
     return crud.list_asset_events(db, asset_id)
+
+
+# Bulk import response model
+class BulkImportResult(schemas.BaseModel):
+    success_count: int
+    error_count: int
+    errors: list[dict]
+    created_assets: list[schemas.AssetRead]
+
+
+@router.post(
+    "/bulk-import",
+    response_model=BulkImportResult,
+    dependencies=[Depends(require_roles(UserRole.ADMIN))]
+)
+def bulk_import_assets(
+    assets: list[schemas.AssetCreate],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Bulk import multiple assets at once. Admin only.
+    Returns a summary of successes and failures.
+    """
+    created = []
+    errors = []
+    
+    for idx, asset_data in enumerate(assets):
+        try:
+            asset = crud.create_asset(db, asset_data, actor_user_id=current_user.id)
+            created.append(asset)
+        except Exception as e:
+            errors.append({
+                "row": idx + 1,
+                "asset_tag": asset_data.asset_tag,
+                "error": str(e)
+            })
+    
+    return BulkImportResult(
+        success_count=len(created),
+        error_count=len(errors),
+        errors=errors,
+        created_assets=created
+    )

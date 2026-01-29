@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { apiFetch, getErrorMessage } from "@/lib/api";
 import { getToken, clearToken } from "@/lib/auth";
+import { getTheme, setTheme, type ThemeMode } from "@/lib/theme";
 import { formatDate } from "@/lib/date";
-import { validateEmail, validatePassword, validateName } from "@/lib/validation";
 
 import {
   Card,
@@ -40,19 +40,6 @@ type CurrentUser = {
   role: string;
 };
 
-type UserRequest = {
-  id: number;
-  requested_name: string;
-  requested_email: string;
-  requested_role: string;
-  requester_id: number;
-  target_admin_id: number;
-  status: string;
-  created_at: string;
-  requester_name: string | null;
-  requester_email: string | null;
-};
-
 const ROLE_OPTIONS = ["EMPLOYEE", "MANAGER", "ADMIN", "AUDITOR"];
 
 // Role priority for sorting (lower = higher priority)
@@ -72,41 +59,18 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [themeMode, setThemeMode] = useState<ThemeMode>("light");
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [tempPasswordInfo, setTempPasswordInfo] = useState<string | null>(null);
 
-  // Create user form state
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newEmail, setNewEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [newRole, setNewRole] = useState("EMPLOYEE");
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
-
-  // Request user form state (for managers)
-  const [showRequestForm, setShowRequestForm] = useState(false);
-  const [requestName, setRequestName] = useState("");
-  const [requestEmail, setRequestEmail] = useState("");
-  const [requestRole, setRequestRole] = useState("EMPLOYEE");
-  const [requestAdminId, setRequestAdminId] = useState<number | "">("");
-  const [requestSent, setRequestSent] = useState(false);
-  const [requestedAdminName, setRequestedAdminName] = useState("");
-  const [submittingRequest, setSubmittingRequest] = useState(false);
-
-  // Pending requests (for admins)
-  const [pendingRequests, setPendingRequests] = useState<UserRequest[]>([]);
+  // Initialize theme state on mount
+  useEffect(() => {
+    setThemeMode(getTheme());
+  }, []);
 
   const isAdmin = currentUser?.role === "ADMIN";
   const isManager = currentUser?.role === "MANAGER";
   const isEmployee = currentUser?.role === "EMPLOYEE";
-
-  // Get list of active admins for the request dropdown
-  const activeAdmins = users.filter((u) => u.role === "ADMIN" && u.is_active);
-  
-  // Count pending requests for notification
-  const pendingCount = pendingRequests.filter((r) => r.status === "PENDING").length;
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -225,16 +189,6 @@ export default function UsersPage() {
 
       setUsers(usersData);
       setCurrentUser(meData);
-
-      // Load user requests (for admins and managers)
-      if (meData.role === "ADMIN" || meData.role === "MANAGER") {
-        try {
-          const requestsData = await apiFetch<UserRequest[]>("/user-requests", {}, token);
-          setPendingRequests(requestsData);
-        } catch {
-          // Ignore errors fetching requests
-        }
-      }
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally {
@@ -255,7 +209,6 @@ export default function UsersPage() {
     try {
       setActionError(null);
       setActionMessage(null);
-      setTempPasswordInfo(null);
       const token = getToken();
       if (!token) throw new Error("Not logged in");
 
@@ -291,7 +244,6 @@ export default function UsersPage() {
     try {
       setActionError(null);
       setActionMessage(null);
-      setTempPasswordInfo(null);
       const token = getToken();
       if (!token) throw new Error("Not logged in");
 
@@ -311,7 +263,6 @@ export default function UsersPage() {
     try {
       setActionError(null);
       setActionMessage(null);
-      setTempPasswordInfo(null);
       const token = getToken();
       if (!token) throw new Error("Not logged in");
 
@@ -320,175 +271,6 @@ export default function UsersPage() {
         { method: "PATCH" },
         token
       );
-      await loadUsers();
-    } catch (err: unknown) {
-      setActionError(getErrorMessage(err));
-    }
-  }
-
-  async function createUser() {
-    setCreateError(null);
-    
-    // Validate all fields
-    const nameResult = validateName(newName);
-    if (!nameResult.isValid) {
-      setCreateError(nameResult.error ?? "Invalid name");
-      return;
-    }
-    
-    const emailResult = validateEmail(newEmail);
-    if (!emailResult.isValid) {
-      setCreateError(emailResult.error ?? "Invalid email");
-      return;
-    }
-    
-    const passwordResult = validatePassword(newPassword);
-    if (!passwordResult.isValid) {
-      setCreateError(passwordResult.error ?? "Invalid password");
-      return;
-    }
-
-    setCreating(true);
-    try {
-      const token = getToken();
-      if (!token) throw new Error("Not logged in");
-
-      await apiFetch(
-        "/users",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            name: newName.trim(),
-            email: newEmail.trim(),
-            password: newPassword,
-            role: newRole,
-          }),
-        },
-        token
-      );
-
-      // Reset form and close
-      setNewName("");
-      setNewEmail("");
-      setNewPassword("");
-      setNewRole("EMPLOYEE");
-      setShowCreateForm(false);
-      await loadUsers();
-    } catch (err: unknown) {
-      setCreateError(getErrorMessage(err));
-    } finally {
-      setCreating(false);
-    }
-  }
-
-  function cancelCreate() {
-    setShowCreateForm(false);
-    setNewName("");
-    setNewEmail("");
-    setNewPassword("");
-    setNewRole("EMPLOYEE");
-    setCreateError(null);
-  }
-
-  async function submitRequest() {
-    if (!requestName.trim() || !requestEmail.trim()) {
-      setActionError("Please fill in name and email");
-      return;
-    }
-    if (!requestAdminId) {
-      setActionError("Please select an admin to send the request to");
-      return;
-    }
-    
-    setSubmittingRequest(true);
-    try {
-      setActionError(null);
-      setActionMessage(null);
-      setTempPasswordInfo(null);
-      const token = getToken();
-      if (!token) throw new Error("Not logged in");
-
-      await apiFetch(
-        "/user-requests",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            requested_name: requestName.trim(),
-            requested_email: requestEmail.trim(),
-            requested_role: requestRole,
-            target_admin_id: requestAdminId,
-          }),
-        },
-        token
-      );
-
-      // Get the admin name for the success message
-      const selectedAdmin = activeAdmins.find((a) => a.id === requestAdminId);
-      setRequestedAdminName(selectedAdmin?.name ?? "Admin");
-      
-      setRequestSent(true);
-      setShowRequestForm(false);
-      setRequestName("");
-      setRequestEmail("");
-      setRequestRole("EMPLOYEE");
-      setRequestAdminId("");
-      
-      // Clear the success message after 5 seconds
-      setTimeout(() => setRequestSent(false), 5000);
-      
-      await loadUsers();
-    } catch (err: unknown) {
-      setActionError(getErrorMessage(err));
-    } finally {
-      setSubmittingRequest(false);
-    }
-  }
-
-  function cancelRequest() {
-    setShowRequestForm(false);
-    setRequestName("");
-    setRequestEmail("");
-    setRequestRole("EMPLOYEE");
-    setRequestAdminId("");
-  }
-
-  async function approveRequest(requestId: number, requestedName: string) {
-    if (!window.confirm(`Approve request for "${requestedName}"? This will create the user.`)) return;
-    
-    try {
-      setActionError(null);
-      setActionMessage(null);
-      setTempPasswordInfo(null);
-      const token = getToken();
-      if (!token) throw new Error("Not logged in");
-
-      const result = await apiFetch<{
-        message: string;
-        temporary_password: string;
-      }>(`/user-requests/${requestId}/approve`, { method: "POST" }, token);
-      
-      // Show the temporary password to the admin
-      setTempPasswordInfo(
-        `User "${requestedName}" created successfully. Temporary password: ${result.temporary_password}`
-      );
-      
-      await loadUsers();
-    } catch (err: unknown) {
-      setActionError(getErrorMessage(err));
-    }
-  }
-
-  async function denyRequest(requestId: number, requestedName: string) {
-    if (!window.confirm(`Deny request for "${requestedName}"?`)) return;
-    
-    try {
-      setActionError(null);
-      setActionMessage(null);
-      setTempPasswordInfo(null);
-      const token = getToken();
-      if (!token) throw new Error("Not logged in");
-
-      await apiFetch(`/user-requests/${requestId}/deny`, { method: "POST" }, token);
       await loadUsers();
     } catch (err: unknown) {
       setActionError(getErrorMessage(err));
@@ -509,7 +291,7 @@ export default function UsersPage() {
   // Show nothing while checking if user is employee
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
           <p className="text-sm text-muted-foreground">Loading users...</p>
@@ -520,7 +302,7 @@ export default function UsersPage() {
 
   if (isEmployee) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-6">
         <Card className="max-w-md shadow-xl border-0">
           <CardContent className="pt-6 text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -540,7 +322,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Backdrop for profile menu - closes on click anywhere */}
       {showProfileMenu && (
         <div 
@@ -550,7 +332,7 @@ export default function UsersPage() {
       )}
       
       {/* Header */}
-      <header className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-700/50 sticky top-0 shadow-soft ${showProfileMenu ? "z-[80]" : "z-50"}`}>
+      <header className={`bg-white/80 dark:bg-[#000000] backdrop-blur-md border-b border-slate-200/50 dark:border-[#2a2a2a]/50 sticky top-0 shadow-soft ${showProfileMenu ? "z-[80]" : "z-50"}`}>
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 group">
@@ -561,43 +343,20 @@ export default function UsersPage() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gradient">User Management</h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Manage system users</p>
+                <p className="text-xs text-slate-500 dark:text-[#96989d]">Manage system users</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {isAdmin && (
-                <Button 
-                  onClick={() => setShowCreateForm(true)}
-                  className="btn-primary-gradient text-white active-scale"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
-                  Add User
-                </Button>
-              )}
-              {isManager && (
-                <Button 
-                  onClick={() => setShowRequestForm(true)}
-                  className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md shadow-emerald-500/25 transition-all hover:shadow-lg hover:-translate-y-0.5 active-scale"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Request User
-                </Button>
-              )}
               <Button variant="outline" onClick={() => router.push("/assets")} className="hover-lift active-scale">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
                 Assets
               </Button>
-              <Button variant="outline" onClick={loadUsers} disabled={refreshing} className="hover-lift active-scale">
-                <svg className={`w-4 h-4 mr-2 transition-transform ${refreshing ? "animate-spin-reverse" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <Button variant="outline" onClick={loadUsers} disabled={refreshing} className="hover-lift active-scale" title="Refresh">
+                <svg className={`w-4 h-4 transition-transform ${refreshing ? "animate-spin-reverse" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                Refresh
               </Button>
               {/* User Profile Dropdown */}
               <div className="relative">
@@ -619,15 +378,15 @@ export default function UsersPage() {
 
                 {showProfileMenu && (
                     <div 
-                      className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 z-[70] animate-in fade-in slide-in-from-top-2 duration-200"
+                      className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#0a0a0a] rounded-xl shadow-2xl border border-slate-200 dark:border-[#2a2a2a] z-[70] animate-in fade-in slide-in-from-top-2 duration-200"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {/* User Info */}
-                      <div className="p-3 border-b border-slate-100 dark:border-slate-800">
+                      <div className="p-3 border-b border-slate-100 dark:border-[#2a2a2a]">
                         <p className="font-medium text-sm text-slate-800 dark:text-slate-200 truncate">
                           {currentUser?.name}
                         </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                        <p className="text-xs text-slate-500 dark:text-[#96989d]">
                           {currentUser?.role}
                         </p>
                       </div>
@@ -638,7 +397,7 @@ export default function UsersPage() {
                           <Link
                             href="/audit?tab=users"
                             onClick={() => setShowProfileMenu(false)}
-                            className="flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-[#dcddde] hover:bg-slate-50 dark:hover:bg-[#2a2a2a] transition-colors"
                           >
                             <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -647,7 +406,28 @@ export default function UsersPage() {
                           </Link>
                         )}
 
-                        <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+                        {/* Theme Toggle */}
+                        <button
+                          onClick={() => {
+                            const next = themeMode === "light" ? "dark" : "light";
+                            setTheme(next);
+                            setThemeMode(next);
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-[#dcddde] hover:bg-slate-50 dark:hover:bg-[#1a1a1a] transition-colors"
+                        >
+                          {themeMode === "dark" ? (
+                            <svg className="w-4 h-4 text-slate-500 dark:text-[#96989d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
+                          )}
+                          {themeMode === "dark" ? "Light Mode" : "Dark Mode"}
+                        </button>
+
+                        <div className="border-t border-slate-100 dark:border-[#2a2a2a] my-1" />
 
                         {/* Logout */}
                         <button
@@ -683,14 +463,9 @@ export default function UsersPage() {
           <p className="text-sm text-emerald-700">{actionMessage}</p>
         </div>
       )}
-      {tempPasswordInfo && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-700">{tempPasswordInfo}</p>
-        </div>
-      )}
-      <Card className="shadow-xl border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-        <CardHeader className="border-b border-slate-100 dark:border-slate-800">
-          <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white flex items-center gap-2">
+      <Card className="shadow-xl border border-slate-200 dark:border-[#2a2a2a] bg-white/90 dark:bg-[#000000] backdrop-blur-sm">
+        <CardHeader className="border-b border-slate-100 dark:border-[#2a2a2a]">
+          <CardTitle className="text-lg font-semibold text-slate-800 dark:text-[#f0f6fc] flex items-center gap-2">
             <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
@@ -702,209 +477,6 @@ export default function UsersPage() {
         </CardHeader>
 
         <CardContent className="space-y-4 pt-6">
-          {/* Create User Form */}
-          {showCreateForm && isAdmin && (
-            <Card className="border-2 border-primary/20">
-              <CardHeader>
-                <CardTitle className="text-lg">Add New User</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {createError && (
-                  <p className="text-sm text-red-600">{createError}</p>
-                )}
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Name</label>
-                  <Input
-                    placeholder="Full Name"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Email</label>
-                  <Input
-                    type="email"
-                    placeholder="email@example.com"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Password</label>
-                  <Input
-                    type="password"
-                    placeholder="Minimum 8 characters"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Role</label>
-                  <select
-                    className="w-full border rounded-md px-3 py-2 bg-transparent"
-                    value={newRole}
-                    onChange={(e) => setNewRole(e.target.value)}
-                  >
-                    {ROLE_OPTIONS.map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <Button onClick={createUser} disabled={creating}>
-                    {creating ? "Creating..." : "Create User"}
-                  </Button>
-                  <Button variant="outline" onClick={cancelCreate} disabled={creating}>
-                    Cancel
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Request User Form (for Managers) */}
-          {showRequestForm && isManager && (
-            <Card className="border-2 border-blue-200">
-              <CardHeader>
-                <CardTitle className="text-lg">Request New User</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Submit a request to admin to add a new user.
-                </p>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Name</label>
-                  <Input
-                    placeholder="Full Name"
-                    value={requestName}
-                    onChange={(e) => setRequestName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Email</label>
-                  <Input
-                    type="email"
-                    placeholder="email@example.com"
-                    value={requestEmail}
-                    onChange={(e) => setRequestEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Suggested Role</label>
-                  <select
-                    className="w-full border rounded-md px-3 py-2 bg-transparent"
-                    value={requestRole}
-                    onChange={(e) => setRequestRole(e.target.value)}
-                  >
-                    {ROLE_OPTIONS.map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Send Request To</label>
-                  <select
-                    className="w-full border rounded-md px-3 py-2 bg-transparent"
-                    value={requestAdminId}
-                    onChange={(e) =>
-                      setRequestAdminId(e.target.value === "" ? "" : Number(e.target.value))
-                    }
-                  >
-                    <option value="">Select an admin…</option>
-                    {activeAdmins.map((admin) => (
-                      <option key={admin.id} value={admin.id}>
-                        {admin.name} ({admin.email})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <Button onClick={submitRequest} disabled={submittingRequest}>
-                    {submittingRequest ? "Submitting..." : "Submit Request"}
-                  </Button>
-                  <Button variant="outline" onClick={cancelRequest} disabled={submittingRequest}>
-                    Cancel
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Request Sent Success Message */}
-          {requestSent && (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-              <p className="text-green-700 font-medium">
-                Request submitted successfully to {requestedAdminName}! They will review your request.
-              </p>
-            </div>
-          )}
-
-          {/* Pending Requests Section (for Admins) */}
-          {isAdmin && pendingCount > 0 && (
-            <Card className="border-2 border-orange-200">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  Pending User Requests
-                  <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                    {pendingCount}
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>#</TableHead>
-                      <TableHead>Requested Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Requested By</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {pendingRequests
-                      .filter((r) => r.status === "PENDING")
-                      .map((req, index) => (
-                        <TableRow key={req.id} className="table-row-hover transition-all">
-                          <TableCell className="font-medium text-slate-500">{index + 1}</TableCell>
-                          <TableCell>{req.requested_name}</TableCell>
-                          <TableCell>{req.requested_email}</TableCell>
-                          <TableCell>{req.requested_role}</TableCell>
-                          <TableCell>
-                            {req.requester_name ?? `User #${req.requester_id}`}
-                          </TableCell>
-                          <TableCell>
-                            {formatDate(req.created_at)}
-                          </TableCell>
-                          <TableCell className="space-x-2">
-                            <Button
-                              size="sm"
-                              onClick={() => approveRequest(req.id, req.requested_name)}
-                            >
-                              Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => denyRequest(req.id, req.requested_name)}
-                            >
-                              Deny
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Search and Filter */}
           <div className="flex flex-wrap gap-3 mb-4">
             <Input
@@ -914,24 +486,24 @@ export default function UsersPage() {
               className="w-64"
             />
             <select
-              className="border rounded-md px-3 py-2 text-sm"
+              className="border border-slate-300 dark:border-[#2a2a2a] rounded-md px-3 py-2 text-sm bg-white dark:bg-[#000000] text-slate-800 dark:text-[#dcddde]"
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
             >
-              <option value="">All Roles</option>
+              <option value="" className="bg-white dark:bg-[#0a0a0a]">All Roles</option>
               <option value="ADMIN">Admin</option>
               <option value="MANAGER">Manager</option>
               <option value="EMPLOYEE">Employee</option>
               <option value="AUDITOR">Auditor</option>
             </select>
             <select
-              className="border rounded-md px-3 py-2 text-sm"
+              className="border border-slate-300 dark:border-[#2a2a2a] rounded-md px-3 py-2 text-sm bg-white dark:bg-[#000000] text-slate-800 dark:text-[#dcddde]"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as "" | "active" | "inactive")}
             >
-              <option value="">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="" className="bg-white dark:bg-[#0a0a0a]">All Statuses</option>
+              <option value="active" className="bg-white dark:bg-[#0a0a0a]">Active</option>
+              <option value="inactive" className="bg-white dark:bg-[#0a0a0a]">Inactive</option>
             </select>
             {(searchQuery || filterRole || filterStatus) && (
               <Button
@@ -1006,14 +578,14 @@ export default function UsersPage() {
                     <TableCell>
                       {isAdmin && user.id !== currentUser?.id ? (
                         <select
-                          className="border rounded-lg px-2 py-1 bg-white text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                          className="border border-slate-300 dark:border-[#2a2a2a] rounded-lg px-2 py-1 bg-white dark:bg-[#000000] text-slate-800 dark:text-[#dcddde] text-sm focus:ring-2 focus:ring-[#58a6ff]/20 focus:border-[#58a6ff] transition-all"
                           value={user.role}
                           onChange={(e) =>
                             changeUserRole(user.id, user.name, user.role, e.target.value)
                           }
                         >
                           {ROLE_OPTIONS.map((role) => (
-                            <option key={role} value={role}>
+                            <option key={role} value={role} className="bg-white dark:bg-[#0a0a0a] text-slate-800 dark:text-[#dcddde]">
                               {role}
                             </option>
                           ))}
@@ -1086,17 +658,17 @@ export default function UsersPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm">Rows per page:</span>
                   <select
-                    className="border rounded px-2 py-1 text-sm"
+                    className="border border-slate-300 dark:border-[#2a2a2a] rounded px-2 py-1 text-sm bg-white dark:bg-[#000000] text-slate-800 dark:text-[#dcddde]"
                     value={itemsPerPage}
                     onChange={(e) => {
                       setItemsPerPage(Number(e.target.value));
                       handlePageChange(1);
                     }}
                   >
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
+                    <option value={10} className="bg-white dark:bg-[#0a0a0a]">10</option>
+                    <option value={25} className="bg-white dark:bg-[#0a0a0a]">25</option>
+                    <option value={50} className="bg-white dark:bg-[#0a0a0a]">50</option>
+                    <option value={100} className="bg-white dark:bg-[#0a0a0a]">100</option>
                   </select>
                   <Button
                     variant="outline"

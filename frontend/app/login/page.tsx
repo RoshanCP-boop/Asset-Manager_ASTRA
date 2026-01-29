@@ -33,7 +33,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
+    <div className="min-h-screen flex items-start justify-center pt-[12vh] sm:pt-[15vh] p-6 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
       {/* Animated mesh gradient background */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Morphing gradient blobs */}
@@ -47,32 +47,26 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
         
         {/* Twinkling stars */}
-        <div className="absolute top-[8%] left-[12%] w-1 h-1 bg-white/60 rounded-full animate-twinkle" />
-        <div className="absolute top-[15%] right-[18%] w-1.5 h-1.5 bg-white/50 rounded-full animate-twinkle delay-300" />
-        <div className="absolute top-[22%] left-[28%] w-1 h-1 bg-white/70 rounded-full animate-twinkle delay-700" />
-        <div className="absolute top-[12%] left-[55%] w-1 h-1 bg-white/50 rounded-full animate-twinkle delay-500" />
-        <div className="absolute top-[30%] right-[25%] w-1 h-1 bg-white/60 rounded-full animate-twinkle delay-200" />
-        <div className="absolute top-[5%] right-[40%] w-1.5 h-1.5 bg-white/40 rounded-full animate-twinkle delay-1000" />
+        <div className="absolute top-[8%] left-[12%] w-1 h-1 bg-white/50 rounded-full animate-twinkle" />
+        <div className="absolute top-[15%] right-[18%] w-1 h-1 bg-white/40 rounded-full animate-twinkle delay-300" />
+        <div className="absolute top-[22%] left-[30%] w-1 h-1 bg-white/50 rounded-full animate-twinkle delay-700" />
+        <div className="absolute top-[10%] right-[35%] w-1 h-1 bg-white/40 rounded-full animate-twinkle delay-500" />
         
-        {/* Floating orbs with drift */}
-        <div className="absolute top-[40%] left-[5%] w-3 h-3 bg-blue-400/40 rounded-full animate-drift blur-[1px]" />
-        <div className="absolute top-[35%] right-[8%] w-4 h-4 bg-indigo-400/30 rounded-full animate-drift delay-500 blur-[1px]" />
-        <div className="absolute top-[60%] left-[15%] w-2.5 h-2.5 bg-cyan-400/35 rounded-full animate-float-rotate delay-300" />
-        <div className="absolute top-[50%] right-[20%] w-3 h-3 bg-purple-400/30 rounded-full animate-float-rotate delay-700" />
+        {/* Floating orbs */}
+        <div className="absolute top-[40%] left-[6%] w-2 h-2 bg-blue-400/30 rounded-full animate-drift blur-[1px]" />
+        <div className="absolute top-[35%] right-[8%] w-2.5 h-2.5 bg-indigo-400/25 rounded-full animate-drift delay-500 blur-[1px]" />
+        <div className="absolute top-[55%] left-[12%] w-2 h-2 bg-cyan-400/30 rounded-full animate-float delay-300" />
+        <div className="absolute top-[50%] right-[15%] w-2 h-2 bg-purple-400/25 rounded-full animate-float delay-700" />
         
-        {/* Bottom floating particles */}
-        <div className="absolute bottom-[25%] left-[22%] w-2 h-2 bg-blue-400/50 rounded-full animate-float delay-150" />
-        <div className="absolute bottom-[20%] right-[12%] w-3 h-3 bg-teal-400/40 rounded-full animate-drift delay-500" />
-        <div className="absolute bottom-[30%] left-[8%] w-2.5 h-2.5 bg-indigo-400/35 rounded-full animate-float-rotate delay-700" />
-        <div className="absolute bottom-[15%] right-[35%] w-2 h-2 bg-cyan-300/45 rounded-full animate-twinkle delay-200" />
-        <div className="absolute bottom-[35%] left-[40%] w-1.5 h-1.5 bg-purple-400/40 rounded-full animate-float delay-300" />
-        <div className="absolute bottom-[8%] left-[30%] w-2 h-2 bg-blue-400/35 rounded-full animate-drift delay-100" />
-        <div className="absolute bottom-[42%] right-[6%] w-3.5 h-3.5 bg-indigo-300/25 rounded-full animate-float-rotate delay-500" />
+        {/* Bottom particles */}
+        <div className="absolute bottom-[25%] left-[18%] w-1.5 h-1.5 bg-blue-400/35 rounded-full animate-float delay-150" />
+        <div className="absolute bottom-[20%] right-[12%] w-2 h-2 bg-teal-400/30 rounded-full animate-drift delay-500" />
+        <div className="absolute bottom-[30%] left-[8%] w-1.5 h-1.5 bg-indigo-400/30 rounded-full animate-float delay-700" />
         
-        {/* Additional twinkling stars at bottom */}
-        <div className="absolute bottom-[18%] left-[18%] w-1 h-1 bg-white/50 rounded-full animate-twinkle delay-300" />
-        <div className="absolute bottom-[12%] right-[22%] w-1 h-1 bg-white/60 rounded-full animate-twinkle delay-700" />
-        <div className="absolute bottom-[28%] right-[45%] w-1.5 h-1.5 bg-white/40 rounded-full animate-twinkle delay-500" />
+        {/* Bottom twinkling stars */}
+        <div className="absolute bottom-[15%] left-[25%] w-1 h-1 bg-white/45 rounded-full animate-twinkle delay-200" />
+        <div className="absolute bottom-[12%] right-[22%] w-1 h-1 bg-white/50 rounded-full animate-twinkle delay-600" />
+        <div className="absolute bottom-[22%] right-[40%] w-1 h-1 bg-white/40 rounded-full animate-twinkle delay-400" />
       </div>
 
       <div className="relative z-10 w-full max-w-md animate-scale-in">
@@ -157,51 +151,12 @@ export default function LoginPage() {
                 )}
               </Button>
 
-              {/* Divider */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200 dark:border-gray-700" />
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-white dark:bg-slate-900 px-3 text-gray-500">Secure login powered by Google</span>
-                </div>
-              </div>
-
-              {/* Feature highlights */}
-              <div className="grid grid-cols-3 gap-3 pt-2">
-                <div className="text-center">
-                  <div className="w-10 h-10 mx-auto mb-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Secure</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-10 h-10 mx-auto mb-2 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Fast</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-10 h-10 mx-auto mb-2 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Trackable</p>
-                </div>
-              </div>
+              <p className="text-xs text-center text-gray-400">
+                Secure authentication powered by Google
+              </p>
             </div>
           </CardContent>
         </Card>
-
-        {/* Footer text */}
-        <p className="text-xs text-center text-blue-200/60 mt-6">
-          By signing in, you agree to our terms of service
-        </p>
       </div>
     </div>
   );
