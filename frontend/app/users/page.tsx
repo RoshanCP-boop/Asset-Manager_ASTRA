@@ -336,14 +336,14 @@ export default function UsersPage() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25 transition-transform group-hover:scale-105">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                </svg>
-              </div>
+              <img 
+                src="/logo.png" 
+                alt="ASTRA" 
+                className="w-14 h-14 object-contain transition-transform group-hover:scale-105"
+              />
               <div>
-                <h1 className="text-xl font-bold text-gradient">User Management</h1>
-                <p className="text-xs text-slate-500 dark:text-[#96989d]">Manage system users</p>
+                <h1 className="text-xl font-bold text-gradient">ASTRA</h1>
+                <p className="text-xs text-slate-500 dark:text-[#96989d]">User Management</p>
               </div>
             </div>
             <div className="flex items-center gap-2">

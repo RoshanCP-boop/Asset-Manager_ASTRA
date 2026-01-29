@@ -81,27 +81,20 @@ export default function LoginPage() {
           <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500/20 via-transparent to-indigo-500/20 pointer-events-none" />
           
           <CardHeader className="text-center pb-2 relative">
-            {/* Logo/Icon */}
-            <div className="mx-auto mb-4 w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 animate-float">
-              <svg
-                className="w-10 h-10 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                />
-              </svg>
+            {/* Logo */}
+            <div className="mx-auto mb-2 w-20 h-20">
+              <img 
+                src="/logo.png" 
+                alt="ASTRA Logo" 
+                className="w-full h-full object-contain"
+                style={{ imageRendering: 'auto' }}
+              />
             </div>
             <CardTitle className="text-2xl font-bold text-gradient">
-              Asset Manager
+              ASTRA
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Track, manage, and organize your assets
+              Asset Tracking, Simplified.
             </p>
           </CardHeader>
           <CardContent className="pt-4 pb-8">

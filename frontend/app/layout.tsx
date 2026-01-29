@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Asset Manager",
-  description: "Asset Management System",
+  title: "ASTRA",
+  description: "Asset Tracking, Simplified.",
 };
 
 export default function RootLayout({
