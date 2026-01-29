@@ -14,6 +14,36 @@ class APIModel(BaseModel):
     model_config = ConfigDict(from_attributes = True)
 
 
+# ---- Organization ----
+class OrganizationCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=200)
+
+
+class OrganizationRead(APIModel):
+    id: int
+    name: str
+    domain: Optional[str] = None
+    is_personal: bool
+    created_at: datetime
+
+
+# ---- Invite Code ----
+class InviteCodeCreate(BaseModel):
+    max_uses: Optional[int] = None  # null = unlimited
+    expires_in_days: Optional[int] = None  # null = never expires
+
+
+class InviteCodeRead(APIModel):
+    id: int
+    code: str
+    organization_id: int
+    max_uses: Optional[int] = None
+    uses: int
+    expires_at: Optional[datetime] = None
+    is_active: bool
+    created_at: datetime
+
+
 # ---- Location ----
 class LocationCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=200)
@@ -37,6 +67,8 @@ class UserRead(APIModel):
     email: EmailStr
     role: UserRole
     is_active: bool
+    organization_id: Optional[int] = None
+    organization_name: Optional[str] = None
 
     @computed_field
     @property

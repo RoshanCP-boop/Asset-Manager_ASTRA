@@ -21,7 +21,12 @@ def create_asset(
     current_user: User = Depends(get_current_user),
 ):
     try:
-        return crud.create_asset(db, payload, actor_user_id=current_user.id)
+        return crud.create_asset(
+            db, 
+            payload, 
+            actor_user_id=current_user.id,
+            organization_id=current_user.organization_id,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -47,6 +52,10 @@ def list_assets(
 def get_asset(asset_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     asset = crud.get_asset(db, asset_id)
     if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    # Organization check
+    if asset.organization_id != current_user.organization_id:
         raise HTTPException(status_code=404, detail="Asset not found")
 
     # EMPLOYEE can only view assets assigned to them

@@ -67,7 +67,7 @@ def add_asset_event(
 
 
 # ---------- Assets ----------
-def create_asset(db: Session, payload: schemas.AssetCreate, actor_user_id: int | None = None) -> models.Asset:
+def create_asset(db: Session, payload: schemas.AssetCreate, actor_user_id: int | None = None, organization_id: int | None = None) -> models.Asset:
     # Duplicate checks for clearer errors
     existing_tag = db.scalar(select(models.Asset.id).where(models.Asset.asset_tag == payload.asset_tag))
     if existing_tag:
@@ -96,6 +96,7 @@ def create_asset(db: Session, payload: schemas.AssetCreate, actor_user_id: int |
         status=payload.status,
         location_id=payload.location_id,
         notes=payload.notes,
+        organization_id=organization_id,
     )
 
     try:
@@ -133,10 +134,14 @@ def list_assets(
 ) -> list[Asset]:
     stmt = select(Asset).order_by(Asset.id.desc())
 
+    # Organization filtering - always filter by user's org
+    if current_user and current_user.organization_id:
+        stmt = stmt.where(Asset.organization_id == current_user.organization_id)
+
     if status:
         stmt = stmt.where(Asset.status == status)
 
-    #Role-based filtering
+    # Role-based filtering
     if current_user and current_user.role == UserRole.EMPLOYEE:
         stmt = stmt.where(Asset.assigned_to_user_id == current_user.id)
 

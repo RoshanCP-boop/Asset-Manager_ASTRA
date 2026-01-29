@@ -38,6 +38,19 @@ type CurrentUser = {
   id: number;
   name: string;
   role: string;
+  organization_id?: number;
+  organization_name?: string;
+};
+
+type InviteCode = {
+  id: number;
+  code: string;
+  organization_id: number;
+  max_uses: number | null;
+  uses: number;
+  expires_at: string | null;
+  is_active: boolean;
+  created_at: string;
 };
 
 const ROLE_OPTIONS = ["EMPLOYEE", "MANAGER", "ADMIN", "AUDITOR"];
@@ -62,6 +75,12 @@ export default function UsersPage() {
   const [themeMode, setThemeMode] = useState<ThemeMode>("light");
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  
+  // Invite code state
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
+  const [loadingInvites, setLoadingInvites] = useState(false);
+  const [creatingInvite, setCreatingInvite] = useState(false);
 
   // Initialize theme state on mount
   useEffect(() => {
@@ -254,6 +273,62 @@ export default function UsersPage() {
     }
   }
 
+  // Invite code functions
+  async function loadInviteCodes() {
+    try {
+      setLoadingInvites(true);
+      const token = getToken();
+      if (!token) throw new Error("Not logged in");
+      
+      const codes = await apiFetch<InviteCode[]>("/auth/invite-codes", {}, token);
+      setInviteCodes(codes);
+    } catch (err: unknown) {
+      console.error("Failed to load invite codes:", err);
+    } finally {
+      setLoadingInvites(false);
+    }
+  }
+
+  async function createInviteCode() {
+    try {
+      setCreatingInvite(true);
+      const token = getToken();
+      if (!token) throw new Error("Not logged in");
+      
+      await apiFetch<InviteCode>("/auth/invite-codes", { 
+        method: "POST",
+        body: JSON.stringify({})
+      }, token);
+      
+      await loadInviteCodes();
+    } catch (err: unknown) {
+      setActionError(getErrorMessage(err));
+    } finally {
+      setCreatingInvite(false);
+    }
+  }
+
+  async function deactivateInviteCode(codeId: number) {
+    if (!window.confirm("Are you sure you want to deactivate this invite code?")) return;
+    
+    try {
+      const token = getToken();
+      if (!token) throw new Error("Not logged in");
+      
+      await apiFetch(`/auth/invite-codes/${codeId}`, { method: "DELETE" }, token);
+      await loadInviteCodes();
+    } catch (err: unknown) {
+      setActionError(getErrorMessage(err));
+    }
+  }
+
+  function copyInviteLink(code: string) {
+    const link = `${window.location.origin}/join/${code}`;
+    navigator.clipboard.writeText(link);
+    setActionMessage("Invite link copied to clipboard!");
+    setTimeout(() => setActionMessage(null), 3000);
+  }
+
   async function changeUserRole(userId: number, userName: string, currentRole: string, newRole: string) {
     if (currentRole === newRole) return;
 
@@ -353,6 +428,21 @@ export default function UsersPage() {
                 </svg>
                 Assets
               </Button>
+              {isAdmin && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowInviteModal(true);
+                    loadInviteCodes();
+                  }} 
+                  className="hover-lift active-scale"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  Invite Team
+                </Button>
+              )}
               <Button variant="outline" onClick={loadUsers} disabled={refreshing} className="hover-lift active-scale" title="Refresh">
                 <svg className={`w-4 h-4 transition-transform ${refreshing ? "animate-spin-reverse" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -696,6 +786,98 @@ export default function UsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Invite Team Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowInviteModal(false)}>
+          <div 
+            className="bg-white dark:bg-[#0a0a0a] rounded-xl shadow-2xl border border-slate-200 dark:border-[#2a2a2a] w-full max-w-lg animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-slate-100 dark:border-[#2a2a2a] flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-800 dark:text-[#f0f6fc]">Invite Team Members</h2>
+                <p className="text-sm text-slate-500 dark:text-[#96989d] mt-1">
+                  {currentUser?.organization_name && `Organization: ${currentUser.organization_name}`}
+                </p>
+              </div>
+              <button onClick={() => setShowInviteModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-slate-600 dark:text-[#dcddde]">
+                  Share an invite link to add people to your organization.
+                </p>
+                <Button onClick={createInviteCode} disabled={creatingInvite} size="sm">
+                  {creatingInvite ? "Creating..." : "New Invite"}
+                </Button>
+              </div>
+              
+              {loadingInvites ? (
+                <div className="text-center py-4 text-slate-500">Loading...</div>
+              ) : inviteCodes.length === 0 ? (
+                <div className="text-center py-8 text-slate-500 dark:text-[#96989d]">
+                  <svg className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-[#2a2a2a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  <p>No invite codes yet.</p>
+                  <p className="text-sm mt-1">Create one to invite team members.</p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {inviteCodes.map((invite) => (
+                    <div 
+                      key={invite.id}
+                      className={`p-3 rounded-lg border ${
+                        invite.is_active 
+                          ? "bg-slate-50 dark:bg-[#1a1a1a] border-slate-200 dark:border-[#2a2a2a]" 
+                          : "bg-slate-100 dark:bg-[#0a0a0a] border-slate-300 dark:border-[#1a1a1a] opacity-50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <code className="text-sm font-mono text-slate-700 dark:text-[#dcddde]">{invite.code}</code>
+                          <div className="text-xs text-slate-500 dark:text-[#96989d] mt-1">
+                            Used: {invite.uses}{invite.max_uses ? `/${invite.max_uses}` : ""} times
+                            {invite.expires_at && ` • Expires: ${formatDate(invite.expires_at)}`}
+                            {!invite.is_active && " • Deactivated"}
+                          </div>
+                        </div>
+                        {invite.is_active && (
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => copyInviteLink(invite.code)}
+                            >
+                              Copy Link
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => deactivateInviteCode(invite.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       </main>
     </div>

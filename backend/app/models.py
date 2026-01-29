@@ -49,6 +49,50 @@ class UserRole(str, Enum):
     AUDITOR = "AUDITOR"
 
 
+# List of public email domains that should create personal orgs
+PUBLIC_EMAIL_DOMAINS = {
+    "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "live.com",
+    "aol.com", "icloud.com", "protonmail.com", "mail.com", "zoho.com"
+}
+
+
+class Organization(Base):
+    """Multi-tenant organization model."""
+    __tablename__ = "organizations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(200))
+    # Domain for auto-joining (e.g., "acme.com"), null for personal orgs
+    domain: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True, index=True)
+    # Is this a personal org (single user, public email)?
+    is_personal: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    # Relationships
+    users = relationship("User", back_populates="organization")
+    assets = relationship("Asset", back_populates="organization")
+    invite_codes = relationship("InviteCode", back_populates="organization")
+
+
+class InviteCode(Base):
+    """Invite codes for joining organizations."""
+    __tablename__ = "invite_codes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    code: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), index=True)
+    created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    # Optional: limit uses or expiration
+    max_uses: Mapped[int | None] = mapped_column(Integer, nullable=True)  # null = unlimited
+    uses: Mapped[int] = mapped_column(Integer, default=0)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    organization = relationship("Organization", back_populates="invite_codes")
+    created_by = relationship("User", foreign_keys=[created_by_user_id])
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -63,13 +107,20 @@ class User(Base):
     
     role: Mapped[UserRole] = mapped_column(SAEnum(UserRole,  name="userrole"), default=UserRole.EMPLOYEE, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    
+    # Organization membership
+    organization_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id"), nullable=True, index=True)
+    
     assigned_assets = relationship("Asset", back_populates="assigned_to")
+    organization = relationship("Organization", back_populates="users")
 
 class Asset(Base):
     __tablename__ = "assets"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     
+    # Organization membership
+    organization_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id"), nullable=True, index=True)
 
     asset_tag: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     asset_type: Mapped[AssetType] = mapped_column(SAEnum(AssetType), index=True)
@@ -110,6 +161,7 @@ class Asset(Base):
 
     location = relationship("Location", back_populates="assets")
     assigned_to = relationship("User", back_populates="assigned_assets")
+    organization = relationship("Organization", back_populates="assets")
 
     events = relationship("AssetEvent", back_populates="asset", cascade="all, delete-orphan")
 

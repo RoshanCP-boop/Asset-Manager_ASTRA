@@ -46,22 +46,62 @@ def create_user(
 @router.get(
     "",
     response_model=list[schemas.UserRead],
-    dependencies=[Depends(get_current_user)],  # any logged-in user can read
 )
-def list_users(db: Session = Depends(get_db)):
-    return crud.list_users(db)
+def list_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List users in the current user's organization."""
+    if not current_user.organization_id:
+        return []
+    
+    users = db.query(User).filter(
+        User.organization_id == current_user.organization_id
+    ).all()
+    
+    # Add organization name to each user
+    org_name = current_user.organization.name if current_user.organization else None
+    return [
+        schemas.UserRead(
+            id=u.id,
+            name=u.name,
+            email=u.email,
+            role=u.role,
+            is_active=u.is_active,
+            organization_id=u.organization_id,
+            organization_name=org_name,
+        )
+        for u in users
+    ]
 
 
 @router.get(
     "/{user_id}",
     response_model=schemas.UserRead,
-    dependencies=[Depends(get_current_user)],
 )
-def get_user(user_id: int, db: Session = Depends(get_db)):
+def get_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     user = crud.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
+    
+    # Ensure user is in the same organization
+    if user.organization_id != current_user.organization_id:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    org_name = user.organization.name if user.organization else None
+    return schemas.UserRead(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        role=user.role,
+        is_active=user.is_active,
+        organization_id=user.organization_id,
+        organization_name=org_name,
+    )
 
 
 @router.get(
