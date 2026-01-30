@@ -251,9 +251,10 @@ export default function AssetDetailPage() {
   // Current user for role-based access
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const isAdmin = currentUser?.role === "ADMIN";
+  const isManager = currentUser?.role === "MANAGER";
   const isAuditor = currentUser?.role === "AUDITOR";
-  const canEdit = isAdmin; // Only admin can edit
-  const canAssignReturn = currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER";
+  const canEdit = isAdmin || isManager; // Admin and Manager can edit
+  const canAssignReturn = isAdmin || isManager;
 
   const isAssigned = useMemo(
     () => Boolean(asset?.assigned_to_user_id),
