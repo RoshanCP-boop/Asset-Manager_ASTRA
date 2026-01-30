@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.db import SessionLocal
-from app.models import User, UserRole
+from app.models import User
 from app.routers.auth import router as auth_router
 from app.routers.assets import router as assets_router
 from app.routers.users import router as users_router

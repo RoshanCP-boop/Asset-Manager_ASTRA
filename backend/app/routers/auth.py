@@ -1,4 +1,5 @@
 import os
+import secrets
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
@@ -240,8 +241,6 @@ def get_my_organization(user=Depends(get_current_user), db: Session = Depends(ge
     
     return org
 
-
-import secrets
 
 @router.post("/invite-codes", response_model=schemas.InviteCodeRead)
 def create_invite_code(

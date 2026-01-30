@@ -85,11 +85,6 @@ def update_asset(
     return crud.update_asset(db, asset, payload, actor_user_id=current_user.id)
 
 
-class AssignRequest(schemas.APIModel):
-    user_id: int
-    notes: str | None = None
-
-
 class ReturnRequest(schemas.APIModel):
     notes: str | None = None
     user_id: int | None = None  # For software: specify which user is returning the seat
@@ -194,7 +189,7 @@ def bulk_import_assets(
     
     for idx, asset_data in enumerate(assets):
         try:
-            asset = crud.create_asset(db, asset_data, actor_user_id=current_user.id)
+            asset = crud.create_asset(db, asset_data, actor_user_id=current_user.id, organization_id=current_user.organization_id)
             created.append(asset)
         except Exception as e:
             errors.append({
