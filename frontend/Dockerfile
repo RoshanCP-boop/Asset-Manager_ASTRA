@@ -11,9 +11,11 @@ RUN npm ci
 # Copy application code
 COPY . .
 
+# Build for production
+RUN npm run build
+
 # Expose port
 EXPOSE 3000
 
-# Start in development mode (simpler for self-hosted)
-# For production, you'd need to add Suspense boundaries to all pages using useSearchParams
-CMD ["npm", "run", "dev"]
+# Start production server (uses ~200-400MB less RAM than dev mode)
+CMD ["npm", "start"]

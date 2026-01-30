@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { Suspense, useEffect, useState, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { apiFetch, getErrorMessage } from "@/lib/api";
 import { getToken, clearToken } from "@/lib/auth";
@@ -105,7 +105,7 @@ function getDisplayCategory(category: string | null): string {
   return category;
 }
 
-export default function AssetsPage() {
+function AssetsContent() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1503,5 +1503,24 @@ SW-SLACK-001,SOFTWARE,,Slack Enterprise,,,,IN_STOCK,,100`;
         </>
       )}
     </div>
+  );
+}
+
+function AssetsPageFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mb-4" />
+        <p className="text-slate-600 dark:text-slate-400">Loading assets...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function AssetsPage() {
+  return (
+    <Suspense fallback={<AssetsPageFallback />}>
+      <AssetsContent />
+    </Suspense>
   );
 }

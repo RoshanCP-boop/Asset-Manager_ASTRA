@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch, getErrorMessage } from "@/lib/api";
@@ -102,7 +102,7 @@ type AssetEvent = {
   to_location_name: string | null;
 };
 
-export default function AuditDashboardPage() {
+function AuditContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -941,5 +941,24 @@ export default function AuditDashboardPage() {
         </Card>
       </main>
     </div>
+  );
+}
+
+function AuditPageFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mb-4" />
+        <p className="text-slate-600 dark:text-slate-400">Loading audit dashboard...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function AuditDashboardPage() {
+  return (
+    <Suspense fallback={<AuditPageFallback />}>
+      <AuditContent />
+    </Suspense>
   );
 }

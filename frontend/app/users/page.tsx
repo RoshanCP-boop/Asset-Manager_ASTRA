@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { Suspense, useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { apiFetch, getErrorMessage } from "@/lib/api";
@@ -63,7 +63,7 @@ const ROLE_PRIORITY: Record<string, number> = {
   AUDITOR: 4,
 };
 
-export default function UsersPage() {
+function UsersContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [users, setUsers] = useState<User[]>([]);
@@ -881,5 +881,24 @@ export default function UsersPage() {
 
       </main>
     </div>
+  );
+}
+
+function UsersPageFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mb-4" />
+        <p className="text-slate-600 dark:text-slate-400">Loading users...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function UsersPage() {
+  return (
+    <Suspense fallback={<UsersPageFallback />}>
+      <UsersContent />
+    </Suspense>
   );
 }
