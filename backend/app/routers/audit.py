@@ -19,7 +19,7 @@ def get_audit_summary(
     current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.AUDITOR)),
 ):
     """Get summary statistics for audit dashboard. Admin and Auditor only."""
-    return crud.get_audit_summary(db)
+    return crud.get_audit_summary(db, organization_id=current_user.organization_id)
 
 
 @router.get(
@@ -35,7 +35,7 @@ def get_user_events(
     current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.AUDITOR)),
 ):
     """Get user activity audit log. Admin and Auditor only."""
-    return crud.list_user_events(db, limit=limit, offset=offset, search=search, event_type=event_type)
+    return crud.list_user_events(db, limit=limit, offset=offset, search=search, event_type=event_type, organization_id=current_user.organization_id)
 
 
 @router.get(
@@ -51,4 +51,4 @@ def get_asset_events(
     current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.AUDITOR)),
 ):
     """Get asset activity audit log. Admin and Auditor only."""
-    return crud.list_all_asset_events(db, limit=limit, offset=offset, search=search, event_type=event_type)
+    return crud.list_all_asset_events(db, limit=limit, offset=offset, search=search, event_type=event_type, organization_id=current_user.organization_id)

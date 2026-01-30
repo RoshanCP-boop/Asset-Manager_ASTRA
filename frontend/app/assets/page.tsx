@@ -1388,12 +1388,12 @@ function AssetsContent() {
                       className="flex-1"
                       onClick={() => {
                         // Download sample CSV with clear examples
-                        const sample = `asset_tag,asset_type,category,subscription,manufacturer,model,serial_number,status,condition,seats_total
-HW-LAPTOP-001,HARDWARE,LAPTOP,,Dell,XPS 15,SN-ABC123,IN_STOCK,NEW,
-HW-MONITOR-001,HARDWARE,MONITOR,,LG,27UK850,SN-DEF456,IN_STOCK,GOOD,
-HW-PHONE-001,HARDWARE,PHONE,,Apple,iPhone 15,SN-GHI789,IN_STOCK,NEW,
-SW-OFFICE-001,SOFTWARE,,Microsoft 365 Business,,,,IN_STOCK,,50
-SW-SLACK-001,SOFTWARE,,Slack Enterprise,,,,IN_STOCK,,100`;
+                        const sample = `asset_tag,asset_type,category,subscription,manufacturer,model,serial_number,status,condition,seats_total,warranty_end,notes
+HW-LAPTOP-001,HARDWARE,Laptop,,Dell,XPS 15,SN-ABC123,IN_STOCK,NEW,,2027-01-15,Intel i7 with 32GB RAM
+HW-MONITOR-001,HARDWARE,Monitor,,LG,27UK850,SN-DEF456,IN_STOCK,GOOD,,2027-06-15,27" 4K Monitor
+HW-PHONE-001,HARDWARE,Phone,,Apple,iPhone 15,SN-GHI789,IN_STOCK,NEW,,2027-03-01,Company mobile device
+SW-OFFICE-001,SOFTWARE,,Microsoft 365 Business,,,,IN_STOCK,NEW,50,,Annual subscription - 50 seats
+SW-SLACK-001,SOFTWARE,,Slack Enterprise,,,,IN_STOCK,NEW,100,,Annual subscription - 100 seats`;
                         const blob = new Blob([sample], { type: 'text/csv' });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');

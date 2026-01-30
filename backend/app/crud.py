@@ -68,13 +68,27 @@ def add_asset_event(
 
 # ---------- Assets ----------
 def create_asset(db: Session, payload: schemas.AssetCreate, actor_user_id: int | None = None, organization_id: int | None = None) -> models.Asset:
-    # Duplicate checks for clearer errors
-    existing_tag = db.scalar(select(models.Asset.id).where(models.Asset.asset_tag == payload.asset_tag))
+    # Duplicate checks scoped to organization for clearer errors
+    # Build org filter
+    if organization_id is not None:
+        org_filter = models.Asset.organization_id == organization_id
+    else:
+        org_filter = models.Asset.organization_id.is_(None)
+    
+    existing_tag = db.scalar(
+        select(models.Asset.id).where(
+            models.Asset.asset_tag == payload.asset_tag,
+            org_filter
+        )
+    )
     if existing_tag:
         raise ValueError("Asset tag already exists")
     if payload.serial_number:
         existing_serial = db.scalar(
-            select(models.Asset.id).where(models.Asset.serial_number == payload.serial_number)
+            select(models.Asset.id).where(
+                models.Asset.serial_number == payload.serial_number,
+                org_filter
+            )
         )
         if existing_serial:
             raise ValueError("Serial number already exists")
@@ -92,6 +106,8 @@ def create_asset(db: Session, payload: schemas.AssetCreate, actor_user_id: int |
         warranty_start=payload.warranty_start,
         warranty_end=payload.warranty_end,
         renewal_date=payload.renewal_date,
+        seats_total=payload.seats_total,
+        seats_used=payload.seats_used,
         condition=payload.condition,
         status=payload.status,
         location_id=payload.location_id,
@@ -135,8 +151,12 @@ def list_assets(
     stmt = select(Asset).order_by(Asset.id.desc())
 
     # Organization filtering - always filter by user's org
-    if current_user and current_user.organization_id:
-        stmt = stmt.where(Asset.organization_id == current_user.organization_id)
+    if current_user:
+        if current_user.organization_id:
+            stmt = stmt.where(Asset.organization_id == current_user.organization_id)
+        else:
+            # User has no org - only show assets with no org (personal assets)
+            stmt = stmt.where(Asset.organization_id.is_(None))
 
     if status:
         stmt = stmt.where(Asset.status == status)
@@ -200,6 +220,7 @@ def list_all_asset_events(
     offset: int = 0,
     search: str | None = None,
     event_type: str | None = None,
+    organization_id: int | None = None,
 ) -> list[dict]:
     """Get all asset events across all assets, for audit purposes with optional filters."""
     
@@ -226,6 +247,12 @@ def list_all_asset_events(
         .outerjoin(FromLocation, models.AssetEvent.from_location_id == FromLocation.id)
         .outerjoin(ToLocation, models.AssetEvent.to_location_id == ToLocation.id)
     )
+    
+    # Filter by organization (via asset's org)
+    if organization_id is not None:
+        stmt = stmt.where(models.Asset.organization_id == organization_id)
+    else:
+        stmt = stmt.where(models.Asset.organization_id.is_(None))
     
     # Filter by event type
     if event_type:
@@ -555,6 +582,7 @@ def list_user_events(
     offset: int = 0,
     search: str | None = None,
     event_type: str | None = None,
+    organization_id: int | None = None,
 ) -> list[schemas.UserEventRead]:
     """Get recent user events with resolved user names and optional filters."""
     
@@ -570,6 +598,12 @@ def list_user_events(
         .outerjoin(TargetUser, models.UserEvent.target_user_id == TargetUser.id)
         .outerjoin(ActorUser, models.UserEvent.actor_user_id == ActorUser.id)
     )
+    
+    # Filter by organization (via target user's org)
+    if organization_id is not None:
+        stmt = stmt.where(TargetUser.organization_id == organization_id)
+    else:
+        stmt = stmt.where(TargetUser.organization_id.is_(None))
     
     # Filter by event type
     if event_type:
@@ -609,7 +643,7 @@ def list_user_events(
     return events
 
 
-def get_audit_summary(db: Session) -> schemas.AuditSummary:
+def get_audit_summary(db: Session, organization_id: int | None = None) -> schemas.AuditSummary:
     """Get summary statistics for audit dashboard."""
     from datetime import datetime, timedelta, timezone
     
@@ -617,12 +651,18 @@ def get_audit_summary(db: Session) -> schemas.AuditSummary:
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=7)
     
+    # Build org filter for users
+    if organization_id is not None:
+        user_org_filter = models.User.organization_id == organization_id
+    else:
+        user_org_filter = models.User.organization_id.is_(None)
+    
     # User counts (single query)
     user_counts = db.execute(
         select(
             func.count(models.User.id),
             func.sum(case((models.User.is_active == True, 1), else_=0)),
-        )
+        ).where(user_org_filter)
     ).one()
     total_users = user_counts[0] or 0
     active_users = user_counts[1] or 0
@@ -632,6 +672,12 @@ def get_audit_summary(db: Session) -> schemas.AuditSummary:
     # For software: use "effective status" based on seat utilization (matching frontend logic)
     # - IN_STOCK if seats_used < seats_total (or seats_total is null/seats not configured)
     # - ASSIGNED only if seats_used >= seats_total (fully utilized)
+    
+    # Build org filter for assets
+    if organization_id is not None:
+        asset_org_filter = models.Asset.organization_id == organization_id
+    else:
+        asset_org_filter = models.Asset.organization_id.is_(None)
     
     # Helper: coalesce seats_used to 0 if null
     seats_used_val = func.coalesce(models.Asset.seats_used, 0)
@@ -683,7 +729,7 @@ def get_audit_summary(db: Session) -> schemas.AuditSummary:
             func.coalesce(func.sum(
                 case((models.Asset.asset_type == models.AssetType.SOFTWARE, models.Asset.seats_used), else_=0)
             ), 0),
-        )
+        ).where(asset_org_filter)
     ).one()
     total_assets = asset_counts[0] or 0
     hardware_count = asset_counts[1] or 0
@@ -695,22 +741,28 @@ def get_audit_summary(db: Session) -> schemas.AuditSummary:
     software_seats_used = int(asset_counts[7] or 0)
     software_seats_available = software_seats_total - software_seats_used
 
-    # User event counts (single query)
+    # User event counts (single query) - filter by target user's org
     user_event_counts = db.execute(
         select(
             func.sum(case((models.UserEvent.timestamp >= today_start, 1), else_=0)),
             func.sum(case((models.UserEvent.timestamp >= week_start, 1), else_=0)),
         )
+        .select_from(models.UserEvent)
+        .join(models.User, models.UserEvent.target_user_id == models.User.id)
+        .where(user_org_filter)
     ).one()
     user_events_today = user_event_counts[0] or 0
     user_events_week = user_event_counts[1] or 0
 
-    # Asset event counts (single query)
+    # Asset event counts (single query) - filter by asset's org
     asset_event_counts = db.execute(
         select(
             func.sum(case((models.AssetEvent.timestamp >= today_start, 1), else_=0)),
             func.sum(case((models.AssetEvent.timestamp >= week_start, 1), else_=0)),
         )
+        .select_from(models.AssetEvent)
+        .join(models.Asset, models.AssetEvent.asset_id == models.Asset.id)
+        .where(asset_org_filter)
     ).one()
     asset_events_today = asset_event_counts[0] or 0
     asset_events_week = asset_event_counts[1] or 0
