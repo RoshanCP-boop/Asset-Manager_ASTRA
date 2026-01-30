@@ -1,6 +1,6 @@
 # ASTRA - Asset Tracking, Simplified.
 
-A modern, full-stack asset management application with multi-tenancy support, Google OAuth, and role-based access control.
+A full-stack asset management application with multi-tenancy support, Google OAuth, and role-based access control.
 
 ![ASTRA](frontend/public/logo.png)
 
