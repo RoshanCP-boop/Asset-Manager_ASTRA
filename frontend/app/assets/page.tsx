@@ -1244,7 +1244,7 @@ function AssetsContent() {
                             const statusClass = isFull ? "status-assigned" : "status-in-stock";
                             return (
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}`}>
-                                {isFull ? "FULL" : "IN_STOCK"} ({remaining !== null ? `${remaining} left` : "∞"})
+                                {isFull ? "ASSIGNED" : "IN_STOCK"} ({remaining !== null ? `${remaining}/${total}` : "∞"})
                               </span>
                             );
                           })()
