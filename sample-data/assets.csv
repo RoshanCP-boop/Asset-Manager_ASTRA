@@ -19,13 +19,13 @@ HW-017,HARDWARE,Tablet,,Apple,iPad Pro 12.9",SN-IPAD-001,2024-03-15,2026-03-15,I
 HW-018,HARDWARE,Printer,,HP,LaserJet Pro M404dn,SN-HP-PRINT-001,2023-08-01,2026-08-01,IN_STOCK,GOOD,Company,Office laser printer
 HW-019,HARDWARE,Webcam,,Logitech,Brio 4K,SN-LOGI-CAM-001,2024-01-10,2026-01-10,IN_STOCK,NEW,Company,4K webcam for video calls
 HW-020,HARDWARE,Webcam,,Logitech,Brio 4K,SN-LOGI-CAM-002,2024-01-10,2026-01-10,ASSIGNED,GOOD,Company,4K webcam for video calls
-SW-001,SOFTWARE,Development,JetBrains All Products,JetBrains,All Products Pack,,2024-01-01,,IN_STOCK,NEW,Company,Annual subscription - 10 seats
-SW-002,SOFTWARE,Development,GitHub Enterprise,GitHub,Enterprise,,2024-01-01,,IN_STOCK,NEW,Company,Annual subscription - unlimited repos
-SW-003,SOFTWARE,Design,Figma Organization,Figma,Organization,,2024-02-01,,IN_STOCK,NEW,Company,Annual subscription - 15 seats
-SW-004,SOFTWARE,Productivity,Microsoft 365,Microsoft,365 Business Premium,,2024-01-01,,IN_STOCK,NEW,Company,Annual subscription - 50 seats
-SW-005,SOFTWARE,Communication,Slack Business+,Slack,Business+,,2024-01-01,,IN_STOCK,NEW,Company,Annual subscription - 50 seats
-SW-006,SOFTWARE,Communication,Zoom Business,Zoom,Business,,2024-01-01,,IN_STOCK,NEW,Company,Annual subscription - 20 hosts
-SW-007,SOFTWARE,Security,1Password Business,1Password,Business,,2024-01-01,,IN_STOCK,NEW,Company,Annual subscription - 50 seats
-SW-008,SOFTWARE,Cloud,AWS Reserved,AWS,Reserved Instances,,2024-01-01,,IN_STOCK,NEW,Company,1-year reserved capacity
-SW-009,SOFTWARE,Monitoring,Datadog Pro,Datadog,Pro,,2024-03-01,,IN_STOCK,NEW,Company,Annual subscription
-SW-010,SOFTWARE,Project Management,Linear Standard,Linear,Standard,,2024-01-15,,IN_STOCK,NEW,Company,Annual subscription - 30 seats
+SW-001,SOFTWARE,,JetBrains All Products,JetBrains,All Products Pack,,2024-01-01,,IN_STOCK,NEW,Company,Annual subscription - 10 seats
+SW-002,SOFTWARE,,GitHub Enterprise,GitHub,Enterprise,,2024-01-01,,IN_STOCK,NEW,Company,Annual subscription - unlimited repos
+SW-003,SOFTWARE,,Figma Organization,Figma,Organization,,2024-02-01,,IN_STOCK,NEW,Company,Annual subscription - 15 seats
+SW-004,SOFTWARE,,Microsoft 365,Microsoft,365 Business Premium,,2024-01-01,,IN_STOCK,NEW,Company,Annual subscription - 50 seats
+SW-005,SOFTWARE,,Slack Business+,Slack,Business+,,2024-01-01,,IN_STOCK,NEW,Company,Annual subscription - 50 seats
+SW-006,SOFTWARE,,Zoom Business,Zoom,Business,,2024-01-01,,IN_STOCK,NEW,Company,Annual subscription - 20 hosts
+SW-007,SOFTWARE,,1Password Business,1Password,Business,,2024-01-01,,IN_STOCK,NEW,Company,Annual subscription - 50 seats
+SW-008,SOFTWARE,,AWS Reserved,AWS,Reserved Instances,,2024-01-01,,IN_STOCK,NEW,Company,1-year reserved capacity
+SW-009,SOFTWARE,,Datadog Pro,Datadog,Pro,,2024-03-01,,IN_STOCK,NEW,Company,Annual subscription
+SW-010,SOFTWARE,,Linear Standard,Linear,Standard,,2024-01-15,,IN_STOCK,NEW,Company,Annual subscription - 30 seats
