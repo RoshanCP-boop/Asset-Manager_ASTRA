@@ -331,6 +331,23 @@ sudo systemctl restart caddy
 3. The first person from your company domain becomes **Admin**
 4. Invite your team from the **Users** page
 
+## Alternative: Deploy with Render
+
+A `render.yaml` Blueprint file is included for quick deployment to [Render](https://render.com). This is useful for demos or testing, but not recommended for production.
+
+1. Fork/clone the repo to your GitHub
+2. Go to [Render Dashboard](https://dashboard.render.com) → **New** → **Blueprint**
+3. Connect your repo - Render will detect `render.yaml`
+4. Set environment variables when prompted:
+   - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - from Google Cloud Console
+   - `FRONTEND_URL` - your Render frontend URL (after first deploy)
+   - `NEXT_PUBLIC_API_URL` - your Render backend URL (after first deploy)
+5. Deploy and update Google OAuth redirect URI to include your backend URL
+
+**Note:** Render's free tier has limitations:
+- Services sleep after 15 minutes of inactivity (slow cold starts)
+- Free PostgreSQL databases expire after 90 days
+
 ## Sample Data
 
 Want to see how the app looks with data? We've included a sample CSV file with 30 assets (20 hardware + 10 software):
