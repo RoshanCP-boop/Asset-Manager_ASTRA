@@ -81,6 +81,8 @@ function UsersContent() {
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
   const [loadingInvites, setLoadingInvites] = useState(false);
   const [creatingInvite, setCreatingInvite] = useState(false);
+  const [inviteExpiry, setInviteExpiry] = useState<string>("7d"); // default 7 days
+  const [inviteMaxUses, setInviteMaxUses] = useState<string>(""); // default unlimited
 
   // Initialize theme state on mount
   useEffect(() => {
@@ -295,9 +297,28 @@ function UsersContent() {
       const token = getToken();
       if (!token) throw new Error("Not logged in");
       
+      // Calculate expiration date based on selected option
+      let expires_at: string | null = null;
+      if (inviteExpiry) {
+        const now = new Date();
+        const expiryMs: Record<string, number> = {
+          "30m": 30 * 60 * 1000,
+          "1h": 60 * 60 * 1000,
+          "6h": 6 * 60 * 60 * 1000,
+          "12h": 12 * 60 * 60 * 1000,
+          "1d": 24 * 60 * 60 * 1000,
+          "7d": 7 * 24 * 60 * 60 * 1000,
+        };
+        if (expiryMs[inviteExpiry]) {
+          expires_at = new Date(now.getTime() + expiryMs[inviteExpiry]).toISOString();
+        }
+      }
+      
+      const max_uses = inviteMaxUses ? parseInt(inviteMaxUses, 10) : null;
+      
       await apiFetch<InviteCode>("/auth/invite-codes", { 
         method: "POST",
-        body: JSON.stringify({})
+        body: JSON.stringify({ expires_at, max_uses })
       }, token);
       
       await loadInviteCodes();
@@ -809,12 +830,49 @@ function UsersContent() {
             </div>
             
             <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-slate-600 dark:text-[#dcddde]">
-                  Share an invite link to add people to your organization.
-                </p>
+              <p className="text-sm text-slate-600 dark:text-[#dcddde]">
+                Share an invite link to add people to your organization.
+              </p>
+              
+              <div className="flex flex-wrap items-end gap-3 p-3 bg-slate-50 dark:bg-[#1a1a1a] rounded-lg border border-slate-200 dark:border-[#2a2a2a]">
+                <div className="flex-1 min-w-[120px]">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-[#96989d] mb-1">
+                    Expires after
+                  </label>
+                  <select
+                    value={inviteExpiry}
+                    onChange={(e) => setInviteExpiry(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm rounded border border-slate-300 dark:border-[#3a3a3a] bg-white dark:bg-[#0a0a0a] text-slate-700 dark:text-[#dcddde]"
+                  >
+                    <option value="30m">30 minutes</option>
+                    <option value="1h">1 hour</option>
+                    <option value="6h">6 hours</option>
+                    <option value="12h">12 hours</option>
+                    <option value="1d">1 day</option>
+                    <option value="7d">7 days</option>
+                    <option value="">Never</option>
+                  </select>
+                </div>
+                <div className="flex-1 min-w-[120px]">
+                  <label className="block text-xs font-medium text-slate-500 dark:text-[#96989d] mb-1">
+                    Max uses
+                  </label>
+                  <select
+                    value={inviteMaxUses}
+                    onChange={(e) => setInviteMaxUses(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm rounded border border-slate-300 dark:border-[#3a3a3a] bg-white dark:bg-[#0a0a0a] text-slate-700 dark:text-[#dcddde]"
+                  >
+                    <option value="">No limit</option>
+                    <option value="1">1 use</option>
+                    <option value="5">5 uses</option>
+                    <option value="10">10 uses</option>
+                    <option value="25">25 uses</option>
+                    <option value="50">50 uses</option>
+                    <option value="100">100 uses</option>
+                  </select>
+                </div>
                 <Button onClick={createInviteCode} disabled={creatingInvite} size="sm">
-                  {creatingInvite ? "Creating..." : "New Invite"}
+                  {creatingInvite ? "Creating..." : "Create Invite"}
                 </Button>
               </div>
               
