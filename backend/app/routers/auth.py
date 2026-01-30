@@ -162,8 +162,19 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             db.commit()
             db.refresh(user)
             
-            # Log user creation event
-            notes = f"First user in org '{org.name}' - auto-assigned ADMIN role via Google OAuth" if is_first_in_org else f"Joined org '{org.name}' via Google OAuth"
+            # Log user creation event with invite info if applicable
+            if is_first_in_org:
+                notes = f"First user in org '{org.name}' - auto-assigned ADMIN role"
+            elif invite_code:
+                # Look up invite details for audit trail
+                invite = db.query(InviteCode).filter(InviteCode.code == invite_code).first()
+                if invite and invite.created_by:
+                    notes = f"Joined org '{org.name}' via invite from {invite.created_by.name}"
+                else:
+                    notes = f"Joined org '{org.name}' via invite link"
+            else:
+                notes = f"Joined org '{org.name}' via Google OAuth"
+            
             crud.add_user_event(
                 db,
                 event_type=UserEventType.USER_CREATED,
@@ -295,14 +306,14 @@ def list_invite_codes(user=Depends(get_current_user), db: Session = Depends(get_
 
 
 @router.delete("/invite-codes/{code_id}")
-def deactivate_invite_code(
+def deactivate_or_delete_invite_code(
     code_id: int,
     user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Deactivate an invite code. Admin only."""
+    """Deactivate an active invite code, or permanently delete a deactivated one. Admin only."""
     if user.role != UserRole.ADMIN:
-        raise HTTPException(403, "Only admins can deactivate invite codes")
+        raise HTTPException(403, "Only admins can manage invite codes")
     
     invite = db.query(InviteCode).filter(
         InviteCode.id == code_id,
@@ -312,7 +323,13 @@ def deactivate_invite_code(
     if not invite:
         raise HTTPException(404, "Invite code not found")
     
-    invite.is_active = False
-    db.commit()
-    
-    return {"message": "Invite code deactivated"}
+    if invite.is_active:
+        # Deactivate active invite
+        invite.is_active = False
+        db.commit()
+        return {"message": "Invite code deactivated"}
+    else:
+        # Permanently delete already-deactivated invite
+        db.delete(invite)
+        db.commit()
+        return {"message": "Invite code deleted"}

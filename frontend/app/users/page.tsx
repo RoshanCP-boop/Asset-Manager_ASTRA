@@ -343,6 +343,20 @@ function UsersContent() {
     }
   }
 
+  async function deleteInviteCode(codeId: number) {
+    if (!window.confirm("Permanently delete this invite code?")) return;
+    
+    try {
+      const token = getToken();
+      if (!token) throw new Error("Not logged in");
+      
+      await apiFetch(`/auth/invite-codes/${codeId}`, { method: "DELETE" }, token);
+      await loadInviteCodes();
+    } catch (err: unknown) {
+      setActionError(getErrorMessage(err));
+    }
+  }
+
   function copyInviteLink(code: string) {
     const link = `${window.location.origin}/join/${code}`;
     navigator.clipboard.writeText(link);
@@ -906,27 +920,42 @@ function UsersContent() {
                             {!invite.is_active && " • Deactivated"}
                           </div>
                         </div>
-                        {invite.is_active && (
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
+                          {invite.is_active ? (
+                            <>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => copyInviteLink(invite.code)}
+                              >
+                                Copy Link
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => deactivateInviteCode(invite.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                                title="Deactivate"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                </svg>
+                              </Button>
+                            </>
+                          ) : (
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => copyInviteLink(invite.code)}
-                            >
-                              Copy Link
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => deactivateInviteCode(invite.id)}
+                              onClick={() => deleteInviteCode(invite.id)}
                               className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                              title="Delete permanently"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                               </svg>
                             </Button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
