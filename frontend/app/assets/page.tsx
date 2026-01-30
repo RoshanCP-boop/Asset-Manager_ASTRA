@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
-import { apiFetch, getErrorMessage } from "@/lib/api";
+import { apiFetch, getErrorMessage, ApiError } from "@/lib/api";
 import { getToken, clearToken } from "@/lib/auth";
 import { getTheme, setTheme, type ThemeMode } from "@/lib/theme";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -401,7 +401,10 @@ function AssetsContent() {
       setError(null);
       setRefreshing(true);
       const token = getToken();
-      if (!token) throw new Error("Not logged in");
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
 
       const [assetsData, meData] = await Promise.all([
         apiFetch<Asset[]>("/assets", {}, token),
@@ -446,6 +449,12 @@ function AssetsContent() {
         }
       }
     } catch (err: unknown) {
+      // Redirect to login on auth errors (401 Unauthorized)
+      if (err instanceof ApiError && err.status === 401) {
+        clearToken();
+        window.location.href = "/login";
+        return;
+      }
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);

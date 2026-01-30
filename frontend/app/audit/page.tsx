@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiFetch, getErrorMessage } from "@/lib/api";
+import { apiFetch, getErrorMessage, ApiError } from "@/lib/api";
 import { getToken, clearToken } from "@/lib/auth";
 import { getTheme, setTheme, type ThemeMode } from "@/lib/theme";
 import { formatDateTime } from "@/lib/date";
@@ -276,7 +276,7 @@ function AuditContent() {
       setError(null);
       const token = getToken();
       if (!token) {
-        router.push("/login");
+        window.location.href = "/login";
         return;
       }
 
@@ -304,6 +304,12 @@ function AuditContent() {
       setHasMoreUserEvents(userEventsData.length === PAGE_SIZE);
       setHasMoreAssetEvents(assetEventsData.length === PAGE_SIZE);
     } catch (err: unknown) {
+      // Redirect to login on auth errors (401 Unauthorized)
+      if (err instanceof ApiError && err.status === 401) {
+        clearToken();
+        window.location.href = "/login";
+        return;
+      }
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);

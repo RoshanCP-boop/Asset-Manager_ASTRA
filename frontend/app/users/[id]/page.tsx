@@ -3,8 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { apiFetch, getErrorMessage } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { apiFetch, getErrorMessage, ApiError } from "@/lib/api";
+import { getToken, clearToken } from "@/lib/auth";
 import { formatDateTime } from "@/lib/date";
 import { Button } from "@/components/ui/button";
 import {
@@ -137,7 +137,10 @@ export default function UserDetailPage() {
     try {
       setError(null);
       const token = getToken();
-      if (!token) throw new Error("Not logged in");
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
 
       const [userData, assetsData, eventsData, meData, allAssetsData] = await Promise.all([
         apiFetch<User>(`/users/${userId}`, {}, token),
@@ -153,6 +156,12 @@ export default function UserDetailPage() {
       setCurrentUser(meData);
       setAllAssets(allAssetsData);
     } catch (err: unknown) {
+      // Redirect to login on auth errors (401 Unauthorized)
+      if (err instanceof ApiError && err.status === 401) {
+        clearToken();
+        window.location.href = "/login";
+        return;
+      }
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);

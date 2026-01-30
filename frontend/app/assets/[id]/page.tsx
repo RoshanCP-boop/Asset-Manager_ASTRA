@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { apiFetch, getErrorMessage } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { apiFetch, getErrorMessage, ApiError } from "@/lib/api";
+import { getToken, clearToken } from "@/lib/auth";
 import { formatDateTime, formatDate } from "@/lib/date";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -287,7 +287,10 @@ export default function AssetDetailPage() {
     setActionError(null);
     try {
       const token = getToken();
-      if (!token) throw new Error("Not logged in");
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
 
       const [assetData, eventsData, usersData, meData, locationsData] = await Promise.all([
         apiFetch<Asset>(`/assets/${id}`, {}, token),
@@ -308,6 +311,12 @@ export default function AssetDetailPage() {
         setAssignUserId(assetData.assigned_to_user_id);
       }
     } catch (e: unknown) {
+      // Redirect to login on auth errors (401 Unauthorized)
+      if (e instanceof ApiError && e.status === 401) {
+        clearToken();
+        window.location.href = "/login";
+        return;
+      }
       setErr(getErrorMessage(e));
     }
   }
