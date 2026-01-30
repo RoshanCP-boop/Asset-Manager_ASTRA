@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { getToken } from "@/lib/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -11,8 +12,18 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
+    // Check if already logged in
+    const token = getToken();
+    if (token) {
+      // Already have a token, redirect to assets
+      window.location.href = "/assets";
+      return;
+    }
+    setCheckingAuth(false);
+
     // Check for error in URL params
     const errorParam = searchParams.get("error");
     if (errorParam) {
@@ -25,6 +36,18 @@ function LoginContent() {
       setError(errorMessages[errorParam] || "An error occurred. Please try again.");
     }
   }, [searchParams]);
+
+  // Show loading while checking for existing auth
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white mb-4" />
+          <p className="text-white/80 text-lg">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   function handleGoogleLogin() {
     setLoading(true);
