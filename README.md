@@ -4,6 +4,12 @@ A full-stack asset management application with multi-tenancy support, Google OAu
 
 ![ASTRA](frontend/public/logo.png)
 
+## Live Demo
+
+Try ASTRA without installing anything: **[astra-frontend-czrm.onrender.com](https://astra-frontend-czrm.onrender.com)**
+
+Sign in with Google to create your own workspace. *(Free tier - may take ~30s to wake up if idle)*
+
 ## Screenshots
 
 ### Asset Dashboard
