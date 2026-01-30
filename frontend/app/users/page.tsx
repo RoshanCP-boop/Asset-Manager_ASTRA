@@ -83,6 +83,7 @@ function UsersContent() {
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [inviteExpiry, setInviteExpiry] = useState<string>("7d"); // default 7 days
   const [inviteMaxUses, setInviteMaxUses] = useState<string>(""); // default unlimited
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Initialize theme state on mount
   useEffect(() => {
@@ -442,21 +443,23 @@ function UsersContent() {
       )}
       
       {/* Header */}
-      <header className={`bg-white/80 dark:bg-[#000000] backdrop-blur-md border-b border-slate-200/50 dark:border-[#2a2a2a]/50 sticky top-0 shadow-soft ${showProfileMenu ? "z-[80]" : "z-50"}`}>
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 group">
+      <header className={`bg-white/80 dark:bg-[#000000] backdrop-blur-md border-b border-slate-200/50 dark:border-[#2a2a2a]/50 sticky top-0 shadow-soft ${showProfileMenu || showMobileMenu ? "z-[80]" : "z-50"}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 group min-w-0">
               <img 
                 src="/logo.png" 
                 alt="ASTRA" 
-                className="w-14 h-14 object-contain transition-transform group-hover:scale-105"
+                className="w-10 h-10 sm:w-14 sm:h-14 object-contain transition-transform group-hover:scale-105 flex-shrink-0"
               />
-              <div>
-                <h1 className="text-xl font-bold text-gradient">ASTRA</h1>
-                <p className="text-xs text-slate-500 dark:text-[#96989d]">User Management</p>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl font-bold text-gradient">ASTRA</h1>
+                <p className="text-xs text-slate-500 dark:text-[#96989d] hidden sm:block">User Management</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center gap-2">
               <Button variant="outline" onClick={() => router.push("/assets")} className="hover-lift active-scale">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -572,12 +575,125 @@ function UsersContent() {
                 )}
               </div>
             </div>
+            
+            {/* Mobile Navigation */}
+            <div className="flex md:hidden items-center gap-2">
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  size="sm"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {showMobileMenu ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    )}
+                  </svg>
+                </Button>
+                
+                {showMobileMenu && (
+                  <div 
+                    className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#0a0a0a] rounded-xl shadow-2xl border border-slate-200 dark:border-[#2a2a2a] z-[70] animate-in fade-in slide-in-from-top-2 duration-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="py-1">
+                      <div className="px-3 py-2 border-b border-slate-100 dark:border-[#2a2a2a]">
+                        <p className="font-medium text-sm text-slate-800 dark:text-slate-200 truncate">{currentUser?.name}</p>
+                        <p className="text-xs text-slate-500 dark:text-[#96989d]">{currentUser?.role}</p>
+                      </div>
+                      
+                      <button
+                        onClick={() => { router.push("/assets"); setShowMobileMenu(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-[#dcddde] hover:bg-slate-50 dark:hover:bg-[#1a1a1a]"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        Assets
+                      </button>
+                      
+                      {isAdmin && (
+                        <button
+                          onClick={() => { setShowInviteModal(true); loadInviteCodes(); setShowMobileMenu(false); }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-[#dcddde] hover:bg-slate-50 dark:hover:bg-[#1a1a1a]"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                          </svg>
+                          Invite Team
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => { loadUsers(); setShowMobileMenu(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-[#dcddde] hover:bg-slate-50 dark:hover:bg-[#1a1a1a]"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Refresh
+                      </button>
+                      
+                      {(currentUser?.role === "ADMIN" || currentUser?.role === "AUDITOR") && (
+                        <button
+                          onClick={() => { router.push("/audit?tab=users"); setShowMobileMenu(false); }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-[#dcddde] hover:bg-slate-50 dark:hover:bg-[#1a1a1a]"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Audit Dashboard
+                        </button>
+                      )}
+                      
+                      <div className="border-t border-slate-100 dark:border-[#2a2a2a] my-1" />
+                      
+                      <button
+                        onClick={() => {
+                          const next = themeMode === "light" ? "dark" : "light";
+                          setTheme(next);
+                          setThemeMode(next);
+                          setShowMobileMenu(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-[#dcddde] hover:bg-slate-50 dark:hover:bg-[#1a1a1a]"
+                      >
+                        {themeMode === "dark" ? (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                          </svg>
+                        )}
+                        {themeMode === "dark" ? "Light Mode" : "Dark Mode"}
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          clearToken();
+                          window.location.href = "/login";
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-6 space-y-4">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4">
       {actionError && (
         <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
           <p className="text-sm text-amber-700">{actionError}</p>
@@ -608,7 +724,7 @@ function UsersContent() {
               placeholder="Search by name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-64"
+              className="w-full sm:w-64"
             />
             <select
               className="border border-slate-300 dark:border-[#2a2a2a] rounded-md px-3 py-2 text-sm bg-white dark:bg-[#000000] text-slate-800 dark:text-[#dcddde]"
@@ -679,27 +795,28 @@ function UsersContent() {
 
           {!loading && !error && (
             <>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>#</TableHead>
+                  <TableHead className="hidden sm:table-cell">#</TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
+                  <TableHead className="hidden md:table-cell">Email</TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden sm:table-cell">Status</TableHead>
                   {isAdmin && <TableHead>Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedUsers.map((user, index) => (
                   <TableRow key={user.id} className="table-row-hover transition-all">
-                    <TableCell className="font-medium text-slate-500">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
+                    <TableCell className="hidden sm:table-cell font-medium text-slate-500">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
                     <TableCell>
                       <Link href={`/users/${user.id}`} className="text-blue-600 hover:underline">
                         {user.name}
                       </Link>
                     </TableCell>
-                    <TableCell>{user.email}</TableCell>
+                    <TableCell className="hidden md:table-cell">{user.email}</TableCell>
                     <TableCell>
                       {isAdmin && user.id !== currentUser?.id ? (
                         <select
@@ -725,7 +842,7 @@ function UsersContent() {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           user.is_active
@@ -769,19 +886,20 @@ function UsersContent() {
                 ))}
               </TableBody>
             </Table>
+            </div>
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-muted-foreground text-center sm:text-left">
                     Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
                     {Math.min(currentPage * itemsPerPage, sortedUsers.length)} of{" "}
                     {sortedUsers.length} users
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">Rows per page:</span>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <span className="text-sm hidden sm:inline">Rows per page:</span>
                   <select
                     className="border border-slate-300 dark:border-[#2a2a2a] rounded px-2 py-1 text-sm bg-white dark:bg-[#000000] text-slate-800 dark:text-[#dcddde]"
                     value={itemsPerPage}
@@ -804,7 +922,7 @@ function UsersContent() {
                     Previous
                   </Button>
                   <span className="text-sm">
-                    Page {currentPage} of {totalPages}
+                    {currentPage}/{totalPages}
                   </span>
                   <Button
                     variant="outline"
@@ -824,26 +942,26 @@ function UsersContent() {
 
       {/* Invite Team Modal */}
       {showInviteModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowInviteModal(false)}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-start sm:items-center justify-center p-4 pt-16 sm:pt-4 overflow-y-auto" onClick={() => setShowInviteModal(false)}>
           <div 
-            className="bg-white dark:bg-[#0a0a0a] rounded-xl shadow-2xl border border-slate-200 dark:border-[#2a2a2a] w-full max-w-lg animate-in fade-in zoom-in-95 duration-200"
+            className="bg-white dark:bg-[#0a0a0a] rounded-xl shadow-2xl border border-slate-200 dark:border-[#2a2a2a] w-full max-w-lg animate-in fade-in zoom-in-95 duration-200 max-h-[calc(100vh-5rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6 border-b border-slate-100 dark:border-[#2a2a2a] flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-slate-800 dark:text-[#f0f6fc]">Invite Team Members</h2>
-                <p className="text-sm text-slate-500 dark:text-[#96989d] mt-1">
-                  {currentUser?.organization_name && `Organization: ${currentUser.organization_name}`}
+            <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-[#2a2a2a] flex items-start justify-between gap-2 sticky top-0 bg-white dark:bg-[#0a0a0a]">
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-[#f0f6fc]">Invite Team</h2>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-[#96989d] mt-1 truncate">
+                  {currentUser?.organization_name && `${currentUser.organization_name}`}
                 </p>
               </div>
-              <button onClick={() => setShowInviteModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button onClick={() => setShowInviteModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex-shrink-0 p-1">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
             
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-4">
               <p className="text-sm text-slate-600 dark:text-[#dcddde]">
                 Share an invite link to add people to your organization.
               </p>

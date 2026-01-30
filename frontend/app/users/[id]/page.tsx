@@ -270,28 +270,28 @@ export default function UserDetailPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#2a2a2a] shadow-sm">
-        <div className="max-w-5xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20 text-white text-xl font-bold">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20 text-white text-base sm:text-xl font-bold flex-shrink-0">
                 {user.name.charAt(0).toUpperCase()}
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-800 dark:text-[#f0f6fc]">{user.name}</h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-2xl font-bold text-slate-800 dark:text-[#f0f6fc] truncate">{user.name}</h1>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
               </div>
             </div>
-            <Button variant="outline" onClick={() => router.push("/users")} className="transition-all hover:-translate-y-0.5">
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <Button variant="outline" onClick={() => router.push("/users")} className="transition-all hover:-translate-y-0.5 flex-shrink-0" size="sm">
+              <svg className="w-4 h-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Back to Users
+              <span className="hidden sm:inline">Back to Users</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-6 space-y-6">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-6">
       {actionError && (
         <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
           <p className="text-sm text-amber-700">{actionError}</p>

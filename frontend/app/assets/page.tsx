@@ -183,6 +183,9 @@ function AssetsContent() {
   // Profile dropdown state
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [themeMode, setThemeMode] = useState<ThemeMode>("light");
+  
+  // Mobile menu state
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Initialize theme state on mount
   useEffect(() => {
@@ -548,21 +551,23 @@ function AssetsContent() {
       )}
       
       {/* Header */}
-      <header className={`bg-white/80 dark:bg-[#000000] backdrop-blur-md border-b border-slate-200/50 dark:border-[#2a2a2a]/50 sticky top-0 shadow-soft ${showReminders || showProfileMenu ? "z-[80]" : "z-50"}`}>
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 group">
+      <header className={`bg-white/80 dark:bg-[#000000] backdrop-blur-md border-b border-slate-200/50 dark:border-[#2a2a2a]/50 sticky top-0 shadow-soft ${showReminders || showProfileMenu || showMobileMenu ? "z-[80]" : "z-50"}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 group min-w-0">
               <img 
                 src="/logo.png" 
                 alt="ASTRA" 
-                className="w-14 h-14 object-contain transition-transform group-hover:scale-105"
+                className="w-10 h-10 sm:w-14 sm:h-14 object-contain transition-transform group-hover:scale-105 flex-shrink-0"
               />
-              <div>
-                <h1 className="text-xl font-bold text-gradient">ASTRA</h1>
-                <p className="text-xs text-slate-500 dark:text-[#96989d]">Asset Tracking, Simplified.</p>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl font-bold text-gradient">ASTRA</h1>
+                <p className="text-xs text-slate-500 dark:text-[#96989d] hidden sm:block">Asset Tracking, Simplified.</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center gap-2">
               {/* Primary Actions - Asset Creation */}
               {canCreateAsset && (
                 <>
@@ -835,12 +840,236 @@ function AssetsContent() {
                 )}
               </div>
             </div>
+            
+            {/* Mobile Navigation */}
+            <div className="flex md:hidden items-center gap-2">
+              {/* Primary action - always visible */}
+              {canCreateAsset && (
+                <Button 
+                  onClick={() => router.push("/assets/new")}
+                  className="btn-primary-gradient text-white active-scale"
+                  size="sm"
+                > 
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </Button>
+              )}
+              
+              {/* Reminders bell - mobile */}
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowReminders(!showReminders)}
+                  size="sm"
+                  className={`relative ${upcomingReminders.some(r => r.urgency === "expired" || r.urgency === "urgent") ? "border-orange-300" : ""}`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  {upcomingReminders.length > 0 && (
+                    <span className={`absolute -top-1 -right-1 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center ${
+                      upcomingReminders.some(r => r.urgency === "expired") 
+                        ? "bg-red-500 animate-pulse" 
+                        : upcomingReminders.some(r => r.urgency === "urgent")
+                        ? "bg-orange-500"
+                        : "bg-amber-500"
+                    }`}>
+                      {upcomingReminders.length}
+                    </span>
+                  )}
+                </Button>
+                
+                {/* Reminders Dropdown - Mobile */}
+                {showReminders && (
+                  <div 
+                    className="fixed top-16 left-4 right-4 sm:absolute sm:top-auto sm:left-auto sm:right-0 sm:mt-2 w-auto sm:w-72 bg-white dark:bg-[#0a0a0a] rounded-xl shadow-2xl border border-slate-200 dark:border-[#2a2a2a] z-[70] animate-in fade-in slide-in-from-top-2 duration-200 max-h-80 overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="p-3 border-b border-slate-100 dark:border-[#2a2a2a]">
+                      <h3 className="font-semibold text-sm text-slate-800 dark:text-white">Upcoming Reminders</h3>
+                    </div>
+                    {upcomingReminders.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-slate-500 dark:text-[#96989d]">
+                        No upcoming reminders
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {upcomingReminders.map((reminder) => (
+                          <div
+                            key={`mobile-${reminder.asset.id}-${reminder.type}`}
+                            className="p-3 hover:bg-slate-50 dark:hover:bg-[#2a2a2a]/50 transition-colors flex items-center gap-3"
+                          >
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                              reminder.urgency === "expired" ? "bg-red-500 animate-pulse" :
+                              reminder.urgency === "urgent" ? "bg-orange-500 animate-pulse" :
+                              reminder.urgency === "warning" ? "bg-amber-500" : "bg-yellow-400"
+                            }`} />
+                            <Link 
+                              href={`/assets/${reminder.asset.id}`}
+                              className="flex-1 min-w-0"
+                              onClick={() => setShowReminders(false)}
+                            >
+                              <p className="font-medium text-sm text-slate-800 dark:text-slate-200 truncate">
+                                {reminder.asset.asset_tag}
+                              </p>
+                              <p className="text-xs text-slate-500 dark:text-[#96989d] truncate">
+                                {reminder.type === "warranty" ? "Warranty" : "Renewal"}
+                              </p>
+                            </Link>
+                            <span className={`text-xs font-medium ${
+                              reminder.urgency === "expired" ? "text-red-600" :
+                              reminder.urgency === "urgent" ? "text-orange-600" :
+                              "text-amber-600"
+                            }`}>
+                              {reminder.daysLeft <= 0 ? "Exp" : `${reminder.daysLeft}d`}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* Mobile menu button */}
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="active-scale"
+                  size="sm"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {showMobileMenu ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    )}
+                  </svg>
+                </Button>
+                
+                {/* Mobile menu dropdown */}
+                {showMobileMenu && (
+                  <div 
+                    className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#0a0a0a] rounded-xl shadow-2xl border border-slate-200 dark:border-[#2a2a2a] z-[70] animate-in fade-in slide-in-from-top-2 duration-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="py-1">
+                      {/* User info */}
+                      <div className="px-3 py-2 border-b border-slate-100 dark:border-[#2a2a2a]">
+                        <p className="font-medium text-sm text-slate-800 dark:text-slate-200 truncate">{currentUser?.name}</p>
+                        <p className="text-xs text-slate-500 dark:text-[#96989d]">{currentUser?.role}</p>
+                      </div>
+                      
+                      {currentUser?.role === "ADMIN" && (
+                        <button
+                          onClick={() => { setShowBulkImportModal(true); setShowMobileMenu(false); }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-[#dcddde] hover:bg-slate-50 dark:hover:bg-[#1a1a1a]"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                          </svg>
+                          Import CSV
+                        </button>
+                      )}
+                      
+                      {canSeeUsers && (
+                        <button
+                          onClick={() => { router.push("/users"); setShowMobileMenu(false); }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-[#dcddde] hover:bg-slate-50 dark:hover:bg-[#1a1a1a]"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                          </svg>
+                          Users
+                          {isAdmin && pendingRequestCount > 0 && (
+                            <span className="ml-auto bg-red-500 text-white text-xs px-1.5 rounded-full">{pendingRequestCount}</span>
+                          )}
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => { setShowAssetRequestForm(true); setShowMobileMenu(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-[#dcddde] hover:bg-slate-50 dark:hover:bg-[#1a1a1a]"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        {canApproveRequests ? "Requests" : "Request Asset"}
+                        {canApproveRequests && pendingAssetRequestCount > 0 && (
+                          <span className="ml-auto bg-amber-500 text-white text-xs px-1.5 rounded-full">{pendingAssetRequestCount}</span>
+                        )}
+                      </button>
+                      
+                      <button
+                        onClick={() => { loadAssets(); setShowMobileMenu(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-[#dcddde] hover:bg-slate-50 dark:hover:bg-[#1a1a1a]"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Refresh
+                      </button>
+                      
+                      {(currentUser?.role === "ADMIN" || currentUser?.role === "AUDITOR") && (
+                        <button
+                          onClick={() => { router.push("/audit?tab=assets"); setShowMobileMenu(false); }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-[#dcddde] hover:bg-slate-50 dark:hover:bg-[#1a1a1a]"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Audit Dashboard
+                        </button>
+                      )}
+                      
+                      <div className="border-t border-slate-100 dark:border-[#2a2a2a] my-1" />
+                      
+                      <button
+                        onClick={() => {
+                          const next = themeMode === "light" ? "dark" : "light";
+                          setTheme(next);
+                          setThemeMode(next);
+                          setShowMobileMenu(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-[#dcddde] hover:bg-slate-50 dark:hover:bg-[#1a1a1a]"
+                      >
+                        {themeMode === "dark" ? (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                          </svg>
+                        )}
+                        {themeMode === "dark" ? "Light Mode" : "Dark Mode"}
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          clearToken();
+                          window.location.href = "/login";
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-6 space-y-4">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4">
       <Card className="shadow-xl border border-slate-200 dark:border-[#2a2a2a] bg-white/90 dark:bg-[#000000] backdrop-blur-sm">
         <CardHeader className="border-b border-slate-100 dark:border-[#2a2a2a]">
           <CardTitle className="text-lg font-semibold text-slate-800 dark:text-[#f0f6fc] flex items-center gap-2">
@@ -861,7 +1090,7 @@ function AssetsContent() {
               placeholder="Search by tag, model, category..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-64"
+              className="w-full sm:w-64"
             />
             <select
               className="border border-slate-300 dark:border-[#2a2a2a] rounded-md px-3 py-2 text-sm bg-white dark:bg-[#000000] text-slate-800 dark:text-[#dcddde]"
@@ -933,21 +1162,22 @@ function AssetsContent() {
 
           {!loading && !error && (
             <>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>#</TableHead>
+                  <TableHead className="hidden sm:table-cell">#</TableHead>
                   <TableHead>Tag</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Model</TableHead>
+                  <TableHead className="hidden sm:table-cell">Type</TableHead>
+                  <TableHead className="hidden md:table-cell">Category</TableHead>
+                  <TableHead className="hidden lg:table-cell">Model</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedAssets.map((asset, index) => (
                   <TableRow key={asset.id} className="table-row-hover transition-all [&>td]:py-3">
-                    <TableCell className="font-medium text-slate-500">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
+                    <TableCell className="hidden sm:table-cell font-medium text-slate-500">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Link
@@ -981,13 +1211,13 @@ function AssetsContent() {
                         })()}
                       </div>
                     </TableCell>
-                    <TableCell>{asset.asset_type}</TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">{asset.asset_type}</TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {asset.asset_type === "SOFTWARE"
                         ? "Subscription"
                         : getDisplayCategory(asset.category)}
                     </TableCell>
-                    <TableCell>{asset.model ?? "-"}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{asset.model ?? "-"}</TableCell>
                     <TableCell>
                       {asset.asset_type === "SOFTWARE" 
                         ? (() => {
@@ -1023,19 +1253,20 @@ function AssetsContent() {
                 ))}
               </TableBody>
             </Table>
+            </div>
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-muted-foreground text-center sm:text-left">
                     Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
                     {Math.min(currentPage * itemsPerPage, sortedAssets.length)} of{" "}
                     {sortedAssets.length} assets
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">Rows per page:</span>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <span className="text-sm hidden sm:inline">Rows per page:</span>
                   <select
                     className="border border-slate-300 dark:border-[#2a2a2a] rounded px-2 py-1 text-sm bg-white dark:bg-[#000000] text-slate-800 dark:text-[#dcddde]"
                     value={itemsPerPage}
@@ -1058,7 +1289,7 @@ function AssetsContent() {
                     Previous
                   </Button>
                   <span className="text-sm">
-                    Page {currentPage} of {totalPages}
+                    {currentPage}/{totalPages}
                   </span>
                   <Button
                     variant="outline"
