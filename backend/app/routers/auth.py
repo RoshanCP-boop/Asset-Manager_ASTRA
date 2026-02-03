@@ -131,19 +131,39 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         user = db.query(User).filter(User.email == email).first()
         
         if user:
+            # Check if this user previously left an organization (google_id was cleared)
+            previously_left = user.google_id is None and not user.is_active
+            
             # Link existing user to Google account
             user.google_id = google_id
             if not user.name or user.name == email:
                 user.name = name
             
+            # If user previously left, reactivate them and assign new org
+            if previously_left:
+                user.is_active = True
+                org, is_first = get_or_create_organization(db, email, invite_code)
+                user.organization_id = org.id
+                user.role = UserRole.ADMIN if is_first else UserRole.EMPLOYEE
+                db.commit()
+                
+                # Log reactivation
+                crud.add_user_event(
+                    db,
+                    event_type=UserEventType.USER_REACTIVATED,
+                    target_user_id=user.id,
+                    actor_user_id=user.id,
+                    notes=f"User rejoined after leaving previous organization",
+                )
             # If user doesn't have an org, assign one
-            if not user.organization_id:
+            elif not user.organization_id:
                 org, is_first = get_or_create_organization(db, email, invite_code)
                 user.organization_id = org.id
                 if is_first:
                     user.role = UserRole.ADMIN
-            
-            db.commit()
+                db.commit()
+            else:
+                db.commit()
         else:
             # Get or create organization
             org, is_first_in_org = get_or_create_organization(db, email, invite_code)
