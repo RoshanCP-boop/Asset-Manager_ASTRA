@@ -119,7 +119,7 @@ function AssetsContent() {
 
   // Role-based permissions
   const canCreateAsset = currentUser?.role === "ADMIN";
-  const canSeeUsers = currentUser?.role !== "EMPLOYEE";
+  const canSeeUsers = true; // All users can view the users list
   const isAdmin = currentUser?.role === "ADMIN";
   const isManager = currentUser?.role === "MANAGER";
   const isEmployee = currentUser?.role === "EMPLOYEE";
