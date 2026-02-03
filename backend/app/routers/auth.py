@@ -212,6 +212,29 @@ def me(user=Depends(get_current_user)):
     )
 
 
+@router.delete("/leave-organization")
+def leave_organization(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Allow a user to leave their organization and delete their account.
+    Next time they sign in, they'll be placed in the correct org based on email domain.
+    """
+    # Log the event before deletion
+    org_name = user.organization.name if user.organization else "Unknown"
+    crud.add_user_event(
+        db,
+        event_type=UserEventType.USER_DEACTIVATED,
+        target_user_id=user.id,
+        actor_user_id=user.id,
+        notes=f"User left organization '{org_name}' voluntarily",
+    )
+    
+    # Delete the user entirely so they can rejoin fresh
+    db.delete(user)
+    db.commit()
+    
+    return {"message": "Successfully left organization. You can sign in again to join a new organization."}
+
+
 @router.get("/join/{invite_code}")
 async def join_with_invite(invite_code: str, request: Request, db: Session = Depends(get_db)):
     """Store invite code in session and redirect to Google login."""

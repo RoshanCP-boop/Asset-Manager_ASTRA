@@ -831,6 +831,30 @@ function AssetsContent() {
 
                         <div className="border-t border-slate-100 dark:border-[#2a2a2a] my-1" />
 
+                        {/* Leave Organization */}
+                        <button
+                          onClick={async () => {
+                            if (!window.confirm("Are you sure you want to leave this organization? Your account will be deleted and you'll need to sign in again to join a new organization.")) {
+                              return;
+                            }
+                            try {
+                              const token = getToken();
+                              if (!token) return;
+                              await apiFetch("/auth/leave-organization", { method: "DELETE" }, token);
+                              clearToken();
+                              window.location.href = "/login";
+                            } catch (err) {
+                              alert("Failed to leave organization: " + getErrorMessage(err));
+                            }
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          Leave Organization
+                        </button>
+
                         {/* Logout */}
                         <button
                           onClick={() => {
@@ -1056,6 +1080,30 @@ function AssetsContent() {
                         {themeMode === "dark" ? "Light Mode" : "Dark Mode"}
                       </button>
                       
+                      {/* Leave Organization */}
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm("Are you sure you want to leave this organization? Your account will be deleted and you'll need to sign in again to join a new organization.")) {
+                            return;
+                          }
+                          try {
+                            const token = getToken();
+                            if (!token) return;
+                            await apiFetch("/auth/leave-organization", { method: "DELETE" }, token);
+                            clearToken();
+                            window.location.href = "/login";
+                          } catch (err) {
+                            alert("Failed to leave organization: " + getErrorMessage(err));
+                          }
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Leave Organization
+                      </button>
+
                       <button
                         onClick={() => {
                           clearToken();
