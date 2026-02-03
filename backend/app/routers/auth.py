@@ -126,6 +126,23 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     # Find or create user
     user = db.query(User).filter(User.google_id == google_id).first()
     
+    # If user found by google_id but is inactive, they may have tried to leave
+    # Reactivate them since they're actively trying to sign in
+    if user and not user.is_active:
+        org, is_first = get_or_create_organization(db, email, invite_code)
+        user.organization_id = org.id
+        user.role = UserRole.ADMIN if is_first else UserRole.EMPLOYEE
+        user.is_active = True
+        db.commit()
+        
+        crud.add_user_event(
+            db,
+            event_type=UserEventType.USER_REACTIVATED,
+            target_user_id=user.id,
+            actor_user_id=user.id,
+            notes="User reactivated by signing in again",
+        )
+    
     if not user:
         # Check if user exists by email (might have been pre-created by admin)
         user = db.query(User).filter(User.email == email).first()
@@ -207,10 +224,14 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     if "invite_code" in request.session:
         del request.session["invite_code"]
     
-    # Check if user is disabled - but allow reactivation if they previously left (org_id is None)
+    # Check if user is disabled - but allow reactivation if they previously left
     if not user.is_active:
-        # If user has no org, they previously left - reactivate them
-        if user.organization_id is None:
+        # User previously left if: org_id is None OR google_id was cleared (None or different)
+        # Admin-disabled users keep their google_id matching
+        previously_left = (user.organization_id is None) or (user.google_id is None) or (user.google_id != google_id)
+        
+        if previously_left:
+            # Reactivate user who previously left
             org, is_first = get_or_create_organization(db, email, invite_code)
             user.organization_id = org.id
             user.role = UserRole.ADMIN if is_first else UserRole.EMPLOYEE
@@ -226,7 +247,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
                 notes="User rejoined after leaving previous organization",
             )
         else:
-            # User was disabled by admin, not by leaving
+            # User was disabled by admin (google_id still matches, has org)
             return RedirectResponse(url=f"{FRONTEND_URL}/login?error=account_disabled")
     
     # Create JWT token
