@@ -144,6 +144,7 @@ class Asset(Base):
 
     status: Mapped[AssetStatus] = mapped_column(SAEnum(AssetStatus), index=True)
     condition: Mapped[AssetCondition] = mapped_column(SAEnum(AssetCondition), index=True)
+    needs_data_wipe: Mapped[bool] = mapped_column(Boolean, default=False)
 
     owner_org: Mapped[str] = mapped_column(String(200), default="Docket")
 

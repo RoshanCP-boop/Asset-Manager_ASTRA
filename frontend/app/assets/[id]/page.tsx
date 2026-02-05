@@ -41,6 +41,7 @@ type Asset = {
   seats_used?: number | null;
   status: string;
   condition?: string | null;
+  needs_data_wipe?: boolean;
   notes?: string | null;
   assigned_to_user_id?: number | null;
   location_id?: number | null;
@@ -229,6 +230,7 @@ export default function AssetDetailPage() {
   const [returnNotes, setReturnNotes] = useState("");
   const [returnUserId, setReturnUserId] = useState<number | "">(""); // For software returns
   const [returnCondition, setReturnCondition] = useState(""); // For hardware returns - update condition
+  const [returnNeedsDataWipe, setReturnNeedsDataWipe] = useState(false); // For hardware returns - needs data wipe
 
   // Update form state
   const [editMode, setEditMode] = useState(false);
@@ -240,6 +242,7 @@ export default function AssetDetailPage() {
   const [editSerialNumber, setEditSerialNumber] = useState("");
   const [editStatus, setEditStatus] = useState("");
   const [editCondition, setEditCondition] = useState("");
+  const [editNeedsDataWipe, setEditNeedsDataWipe] = useState(false);
   const [editNotes, setEditNotes] = useState("");
   const [editRenewalPeriod, setEditRenewalPeriod] = useState("");
   const [editSeatsTotal, setEditSeatsTotal] = useState("");
@@ -377,6 +380,7 @@ export default function AssetDetailPage() {
             notes: returnNotes || null,
             user_id: asset?.asset_type === "SOFTWARE" ? returnUserId : null,
             condition: asset?.asset_type === "HARDWARE" && returnCondition ? returnCondition : null,
+            needs_data_wipe: asset?.asset_type === "HARDWARE" ? returnNeedsDataWipe : false,
           }),
         },
         token
@@ -385,6 +389,7 @@ export default function AssetDetailPage() {
       setReturnNotes("");
       setReturnUserId("");
       setReturnCondition("");
+      setReturnNeedsDataWipe(false);
       await load();
     } catch (e: unknown) {
       setActionError(getErrorMessage(e));
@@ -400,6 +405,7 @@ export default function AssetDetailPage() {
     setEditSerialNumber(asset.serial_number ?? "");
     setEditStatus(asset.status);
     setEditCondition(asset.condition ?? "GOOD");
+    setEditNeedsDataWipe(asset.needs_data_wipe ?? false);
     setEditNotes(asset.notes ?? "");
     setEditRenewalPeriod(""); // Default to no change
     setEditSeatsTotal(asset.seats_total?.toString() ?? "");
@@ -439,6 +445,7 @@ export default function AssetDetailPage() {
         serial_number: editSerialNumber || null,
         status: editStatus,
         condition: editCondition,
+        needs_data_wipe: editNeedsDataWipe,
         notes: editNotes || null,
       };
 
@@ -673,11 +680,16 @@ export default function AssetDetailPage() {
                   : asset.status}
               </p>
               {asset.asset_type === "HARDWARE" && (
-                <p className="flex items-center gap-2">
+                <p className="flex items-center gap-2 flex-wrap">
                   <b>Condition:</b>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getConditionBadgeColor(asset.condition)}`}>
                     {asset.condition?.replace(/_/g, " ") ?? "-"}
                   </span>
+                  {asset.needs_data_wipe && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
+                      ⚠️ Needs Data Wipe
+                    </span>
+                  )}
                 </p>
               )}
               <p>
@@ -774,20 +786,32 @@ export default function AssetDetailPage() {
 
               {/* Condition - only for HARDWARE assets */}
               {asset.asset_type === "HARDWARE" && (
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Condition</label>
-                  <select
-                    className="w-full border rounded-md px-3 py-2 bg-transparent"
-                    value={editCondition}
-                    onChange={(e) => setEditCondition(e.target.value)}
-                  >
-                    {CONDITION_OPTIONS.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Condition</label>
+                    <select
+                      className="w-full border rounded-md px-3 py-2 bg-transparent"
+                      value={editCondition}
+                      onChange={(e) => setEditCondition(e.target.value)}
+                    >
+                      {CONDITION_OPTIONS.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editNeedsDataWipe}
+                      onChange={(e) => setEditNeedsDataWipe(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300"
+                    />
+                    <span className="text-sm">Needs data wipe</span>
+                  </label>
+                </>
               )}
 
               {/* Location - only for HARDWARE assets, Admin only */}
@@ -1137,20 +1161,32 @@ export default function AssetDetailPage() {
                 )}
 
                 {isAssigned && (
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium">Condition after return</div>
-                    <select
-                      className="w-full border rounded-md px-3 py-2 bg-transparent"
-                      value={returnCondition}
-                      onChange={(e) => setReturnCondition(e.target.value)}
-                    >
-                      <option value="">Keep current ({asset.condition})</option>
-                      <option value="NEW">New</option>
-                      <option value="GOOD">Good</option>
-                      <option value="FAIR">Fair - Needs Data Wipe</option>
-                      <option value="DAMAGED">Damaged - Needs Repair</option>
-                    </select>
-                  </div>
+                  <>
+                    <div className="space-y-1">
+                      <div className="text-sm font-medium">Condition after return</div>
+                      <select
+                        className="w-full border rounded-md px-3 py-2 bg-transparent"
+                        value={returnCondition}
+                        onChange={(e) => setReturnCondition(e.target.value)}
+                      >
+                        <option value="">Keep current ({asset.condition})</option>
+                        <option value="NEW">New</option>
+                        <option value="GOOD">Good</option>
+                        <option value="FAIR">Fair</option>
+                        <option value="DAMAGED">Damaged - Needs Repair</option>
+                      </select>
+                    </div>
+                    
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={returnNeedsDataWipe}
+                        onChange={(e) => setReturnNeedsDataWipe(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300"
+                      />
+                      <span className="text-sm">Needs data wipe before reassignment</span>
+                    </label>
+                  </>
                 )}
 
                 <Input

@@ -148,6 +148,7 @@ class AssetUpdate(BaseModel):
 
     status: Optional[AssetStatus] = None
     condition: Optional[AssetCondition] = None
+    needs_data_wipe: Optional[bool] = None
 
     owner_org: Optional[str] = None
     location_id: Optional[int] = None
@@ -178,6 +179,7 @@ class AssetRead(APIModel):
 
     status: AssetStatus
     condition: AssetCondition
+    needs_data_wipe: bool = False
 
     owner_org: str
     location_id: Optional[int]

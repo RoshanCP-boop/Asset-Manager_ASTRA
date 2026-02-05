@@ -469,6 +469,7 @@ def return_asset(
     actor_user_id: int | None = None,
     user_id: int | None = None,  # For software: specify which user is returning
     condition: str | None = None,  # For hardware: update condition on return
+    needs_data_wipe: bool = False,  # For hardware: flag if device needs data wipe
 ):
     asset = db.get(models.Asset, asset_id)
     if not asset:
@@ -528,11 +529,16 @@ def return_asset(
                 asset.condition = models.AssetCondition(condition)
             except ValueError:
                 pass  # Invalid condition value, ignore
+        
+        # Set needs_data_wipe flag
+        asset.needs_data_wipe = needs_data_wipe
 
         # Build notes with "Returned from [name]"
         return_note = f"Returned from {previous_user_name}" if previous_user_name else "Returned"
         if condition:
             return_note = f"{return_note} (Condition: {condition})"
+        if needs_data_wipe:
+            return_note = f"{return_note} [Needs Data Wipe]"
         if notes:
             return_note = f"{return_note}. {notes}"
 

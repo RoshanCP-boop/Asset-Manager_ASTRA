@@ -98,6 +98,7 @@ class ReturnRequest(schemas.APIModel):
     notes: str | None = None
     user_id: int | None = None  # For software: specify which user is returning the seat
     condition: str | None = None  # For hardware: update condition on return (NEW, GOOD, FAIR, DAMAGED)
+    needs_data_wipe: bool = False  # For hardware: flag if device needs data wipe before reassignment
 
 
 @router.post(
@@ -146,6 +147,7 @@ def return_asset(
             actor_user_id=current_user.id,
             user_id=payload.user_id,
             condition=payload.condition,
+            needs_data_wipe=payload.needs_data_wipe,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
