@@ -28,9 +28,9 @@ def create_asset_request(
     if payload.request_type == "EXISTING_ASSET":
         if not payload.asset_id:
             raise HTTPException(400, "asset_id is required for EXISTING_ASSET requests")
-        # Check asset exists and is available
+        # Check asset exists, belongs to same org, and is available
         asset = db.get(models.Asset, payload.asset_id)
-        if not asset:
+        if not asset or asset.organization_id != current_user.organization_id:
             raise HTTPException(404, "Asset not found")
         if asset.status == models.AssetStatus.RETIRED:
             raise HTTPException(400, "Cannot request a retired asset")
@@ -81,13 +81,11 @@ def list_asset_requests(
             ResolvedBy.name.label("resolved_by_name"),
             models.Asset.asset_tag.label("asset_tag"),
         )
-        .outerjoin(Requester, models.AssetRequest.requester_id == Requester.id)
+        .join(Requester, models.AssetRequest.requester_id == Requester.id)  # Inner join to ensure requester exists
+        .where(Requester.organization_id == current_user.organization_id)  # Filter by org
         .outerjoin(ResolvedBy, models.AssetRequest.resolved_by_id == ResolvedBy.id)
         .outerjoin(models.Asset, models.AssetRequest.asset_id == models.Asset.id)
     )
-    
-    # Filter by organization - only see requests from users in same org
-    stmt = stmt.where(Requester.organization_id == current_user.organization_id)
     
     # Employees only see their own requests
     if current_user.role == models.UserRole.EMPLOYEE:
