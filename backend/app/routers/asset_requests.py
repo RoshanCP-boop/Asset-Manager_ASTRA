@@ -69,7 +69,7 @@ def list_asset_requests(
     """
     List asset requests.
     - Employees see only their own requests
-    - Managers/Admins see all requests
+    - Managers/Admins see requests from their organization only
     """
     Requester = aliased(models.User)
     ResolvedBy = aliased(models.User)
@@ -85,6 +85,9 @@ def list_asset_requests(
         .outerjoin(ResolvedBy, models.AssetRequest.resolved_by_id == ResolvedBy.id)
         .outerjoin(models.Asset, models.AssetRequest.asset_id == models.Asset.id)
     )
+    
+    # Filter by organization - only see requests from users in same org
+    stmt = stmt.where(Requester.organization_id == current_user.organization_id)
     
     # Employees only see their own requests
     if current_user.role == models.UserRole.EMPLOYEE:
@@ -140,12 +143,16 @@ def get_pending_count(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Get count of pending asset requests. Admins/Managers only."""
+    """Get count of pending asset requests in current organization. Admins/Managers only."""
     if current_user.role not in (models.UserRole.ADMIN, models.UserRole.MANAGER):
         raise HTTPException(403, "Not authorized")
     
-    count = db.query(models.AssetRequest).filter(
-        models.AssetRequest.status == models.AssetRequestStatus.PENDING
+    # Only count requests from users in the same organization
+    count = db.query(models.AssetRequest).join(
+        models.User, models.AssetRequest.requester_id == models.User.id
+    ).filter(
+        models.AssetRequest.status == models.AssetRequestStatus.PENDING,
+        models.User.organization_id == current_user.organization_id
     ).count()
     
     return {"count": count}
@@ -157,22 +164,24 @@ def get_available_assets(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Get assets available for assignment. Admins/Managers only."""
+    """Get assets available for assignment in current organization. Admins/Managers only."""
     if current_user.role not in (models.UserRole.ADMIN, models.UserRole.MANAGER):
         raise HTTPException(403, "Not authorized")
     
-    # Get hardware that is IN_STOCK and not retired
+    # Get hardware that is IN_STOCK and not retired (same organization only)
     hardware_query = (
         select(models.Asset)
         .where(models.Asset.asset_type == models.AssetType.HARDWARE)
         .where(models.Asset.status == models.AssetStatus.IN_STOCK)
+        .where(models.Asset.organization_id == current_user.organization_id)
     )
     
-    # Get software that has available seats (not fully utilized and not retired)
+    # Get software that has available seats (not fully utilized and not retired, same org only)
     software_query = (
         select(models.Asset)
         .where(models.Asset.asset_type == models.AssetType.SOFTWARE)
         .where(models.Asset.status != models.AssetStatus.RETIRED)
+        .where(models.Asset.organization_id == current_user.organization_id)
         .where(
             (models.Asset.seats_total.is_(None)) |  # Unlimited seats
             (func.coalesce(models.Asset.seats_used, 0) < models.Asset.seats_total)  # Has available seats
@@ -216,6 +225,11 @@ def approve_asset_request(
     
     request = db.get(models.AssetRequest, request_id)
     if not request:
+        raise HTTPException(404, "Request not found")
+    
+    # Verify the requester is in the same organization
+    requester = db.get(models.User, request.requester_id)
+    if not requester or requester.organization_id != current_user.organization_id:
         raise HTTPException(404, "Request not found")
     
     if request.status != models.AssetRequestStatus.PENDING:
@@ -273,6 +287,11 @@ def deny_asset_request(
     
     request = db.get(models.AssetRequest, request_id)
     if not request:
+        raise HTTPException(404, "Request not found")
+    
+    # Verify the requester is in the same organization
+    requester = db.get(models.User, request.requester_id)
+    if not requester or requester.organization_id != current_user.organization_id:
         raise HTTPException(404, "Request not found")
     
     if request.status != models.AssetRequestStatus.PENDING:
