@@ -212,7 +212,7 @@ export default function CompanyDashboardPage() {
     IN_STOCK: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
     ASSIGNED: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
     IN_REPAIR: "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400",
-    RETIRED: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
+    RETIRED: "bg-slate-200 text-slate-700 dark:bg-slate-700/50 dark:text-slate-300",
   };
 
   const conditionColors: Record<string, string> = {

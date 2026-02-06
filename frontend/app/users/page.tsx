@@ -422,6 +422,20 @@ function UsersContent() {
     loadUsers();
   }, []);
 
+  // Update favicon when organization logo changes
+  useEffect(() => {
+    if (organization?.logo_url) {
+      const logoUrl = getLogoUrl(organization.logo_url);
+      if (logoUrl) {
+        const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement || document.createElement('link');
+        link.type = 'image/x-icon';
+        link.rel = 'shortcut icon';
+        link.href = logoUrl;
+        document.head.appendChild(link);
+      }
+    }
+  }, [organization?.logo_url]);
+
   // Show loading state
   if (loading) {
     return (
@@ -530,6 +544,20 @@ function UsersContent() {
                       </div>
 
                       <div className="py-1">
+                        {/* Company Dashboard - Admin only */}
+                        {currentUser?.role === "ADMIN" && (
+                          <Link
+                            href="/company"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-[#dcddde] hover:bg-slate-50 dark:hover:bg-[#2a2a2a] transition-colors"
+                          >
+                            <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            Company Dashboard
+                          </Link>
+                        )}
+
                         {/* Audit Dashboard - Admin and Auditor only */}
                         {(currentUser?.role === "ADMIN" || currentUser?.role === "AUDITOR") && (
                           <Link
@@ -646,6 +674,18 @@ function UsersContent() {
                         Refresh
                       </button>
                       
+                      {currentUser?.role === "ADMIN" && (
+                        <button
+                          onClick={() => { router.push("/company"); setShowMobileMenu(false); }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-[#dcddde] hover:bg-slate-50 dark:hover:bg-[#1a1a1a]"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                          Company Dashboard
+                        </button>
+                      )}
+
                       {(currentUser?.role === "ADMIN" || currentUser?.role === "AUDITOR") && (
                         <button
                           onClick={() => { router.push("/audit?tab=users"); setShowMobileMenu(false); }}

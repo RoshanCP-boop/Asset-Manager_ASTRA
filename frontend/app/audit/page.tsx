@@ -287,6 +287,20 @@ function AuditContent() {
     loadData();
   }, []);
 
+  // Update favicon when organization logo changes
+  useEffect(() => {
+    if (organization?.logo_url) {
+      const logoUrl = getLogoUrl(organization.logo_url);
+      if (logoUrl) {
+        const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement || document.createElement('link');
+        link.type = 'image/x-icon';
+        link.rel = 'shortcut icon';
+        link.href = logoUrl;
+        document.head.appendChild(link);
+      }
+    }
+  }, [organization?.logo_url]);
+
   async function loadData() {
     try {
       setLoading(true);
