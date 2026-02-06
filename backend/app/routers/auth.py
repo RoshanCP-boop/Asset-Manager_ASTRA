@@ -159,6 +159,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         user.organization_id = org.id
         user.role = UserRole.ADMIN if is_first else UserRole.EMPLOYEE
         user.is_active = True
+        user.employee_id = generate_employee_id(db, org)
         db.commit()
         
         crud.add_user_event(
@@ -166,7 +167,14 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             event_type=UserEventType.USER_REACTIVATED,
             target_user_id=user.id,
             actor_user_id=user.id,
-            notes="User reactivated by signing in again",
+            notes="Account reactivated",
+        )
+        crud.add_user_event(
+            db,
+            event_type=UserEventType.ORG_JOINED,
+            target_user_id=user.id,
+            actor_user_id=user.id,
+            notes=f"Joined '{org.name}'",
         )
     
     if not user:
@@ -188,23 +196,40 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
                 org, is_first = get_or_create_organization(db, email, invite_code)
                 user.organization_id = org.id
                 user.role = UserRole.ADMIN if is_first else UserRole.EMPLOYEE
+                user.employee_id = generate_employee_id(db, org)
                 db.commit()
                 
-                # Log reactivation
+                # Log reactivation and org join
                 crud.add_user_event(
                     db,
                     event_type=UserEventType.USER_REACTIVATED,
                     target_user_id=user.id,
                     actor_user_id=user.id,
-                    notes=f"User rejoined after leaving previous organization",
+                    notes="Account reactivated",
+                )
+                crud.add_user_event(
+                    db,
+                    event_type=UserEventType.ORG_JOINED,
+                    target_user_id=user.id,
+                    actor_user_id=user.id,
+                    notes=f"Joined '{org.name}'",
                 )
             # If user doesn't have an org, assign one
             elif not user.organization_id:
                 org, is_first = get_or_create_organization(db, email, invite_code)
                 user.organization_id = org.id
+                user.employee_id = generate_employee_id(db, org)
                 if is_first:
                     user.role = UserRole.ADMIN
                 db.commit()
+                
+                crud.add_user_event(
+                    db,
+                    event_type=UserEventType.ORG_JOINED,
+                    target_user_id=user.id,
+                    actor_user_id=user.id,
+                    notes=f"Joined '{org.name}'",
+                )
             else:
                 db.commit()
         else:
@@ -229,25 +254,33 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             db.commit()
             db.refresh(user)
             
-            # Log user creation event with invite info if applicable
-            if is_first_in_org:
-                notes = f"First user in org '{org.name}' - auto-assigned ADMIN role"
-            elif invite_code:
-                # Look up invite details for audit trail
-                invite = db.query(InviteCode).filter(InviteCode.code == invite_code).first()
-                if invite and invite.created_by:
-                    notes = f"Joined org '{org.name}' via invite from {invite.created_by.name}"
-                else:
-                    notes = f"Joined org '{org.name}' via invite link"
-            else:
-                notes = f"Joined org '{org.name}' via Google OAuth"
-            
+            # Log user creation event
             crud.add_user_event(
                 db,
                 event_type=UserEventType.USER_CREATED,
                 target_user_id=user.id,
                 actor_user_id=user.id,
-                notes=notes,
+                notes=f"Account created via Google OAuth",
+            )
+            
+            # Log organization join event with details
+            if is_first_in_org:
+                join_notes = f"Joined '{org.name}' (first user - assigned ADMIN)"
+            elif invite_code:
+                invite = db.query(InviteCode).filter(InviteCode.code == invite_code).first()
+                if invite and invite.created_by:
+                    join_notes = f"Joined '{org.name}' via invite from {invite.created_by.name}"
+                else:
+                    join_notes = f"Joined '{org.name}' via invite link"
+            else:
+                join_notes = f"Joined '{org.name}' via domain match"
+            
+            crud.add_user_event(
+                db,
+                event_type=UserEventType.ORG_JOINED,
+                target_user_id=user.id,
+                actor_user_id=user.id,
+                notes=join_notes,
             )
     
     # Clear invite code from session
@@ -267,6 +300,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             user.role = UserRole.ADMIN if is_first else UserRole.EMPLOYEE
             user.is_active = True
             user.google_id = google_id
+            user.employee_id = generate_employee_id(db, org)
             db.commit()
             
             crud.add_user_event(
@@ -274,7 +308,14 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
                 event_type=UserEventType.USER_REACTIVATED,
                 target_user_id=user.id,
                 actor_user_id=user.id,
-                notes="User rejoined after leaving previous organization",
+                notes="Account reactivated",
+            )
+            crud.add_user_event(
+                db,
+                event_type=UserEventType.ORG_JOINED,
+                target_user_id=user.id,
+                actor_user_id=user.id,
+                notes=f"Joined '{org.name}'",
             )
         else:
             # User was disabled by admin (google_id still matches, has org)
@@ -356,13 +397,13 @@ def leave_organization(user: User = Depends(get_current_user), db: Session = Dep
         asset.assigned_to_user_id = None
         asset.status = AssetStatus.IN_STOCK
     
-    # Log the event
+    # Log the organization leave event
     crud.add_user_event(
         db,
-        event_type=UserEventType.USER_DEACTIVATED,
+        event_type=UserEventType.ORG_LEFT,
         target_user_id=user.id,
         actor_user_id=user.id,
-        notes=f"User left organization '{org_name}' voluntarily",
+        notes=f"Left organization '{org_name}'",
     )
     
     # Clear google_id so they can re-register, deactivate, and remove from org

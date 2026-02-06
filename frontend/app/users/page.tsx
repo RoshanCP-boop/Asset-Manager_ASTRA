@@ -870,9 +870,17 @@ function UsersContent() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Link href={`/users/${user.id}`} className="text-blue-600 hover:underline">
-                        {user.name}
-                      </Link>
+                      <div className="flex flex-col">
+                        <Link href={`/users/${user.id}`} className="text-blue-600 hover:underline">
+                          {user.name}
+                        </Link>
+                        {/* Show employee ID on mobile (hidden on sm+) */}
+                        {user.employee_id && (
+                          <span className="sm:hidden font-mono text-xs text-slate-500 dark:text-slate-400">
+                            {user.employee_id}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{user.email}</TableCell>
                     <TableCell>
