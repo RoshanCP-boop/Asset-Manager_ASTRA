@@ -53,81 +53,13 @@ type Location = {
   name: string;
 };
 
-// Warranty extension options by category (max extension = last value in array)
-const WARRANTY_EXTENSIONS: Record<string, { value: number; label: string }[]> = {
-  LAPTOP: [
-    { value: 12, label: "1 Year" },
-    { value: 24, label: "2 Years" },
-    { value: 36, label: "3 Years" },
-  ],
-  MONITOR: [
-    { value: 12, label: "1 Year" },
-    { value: 24, label: "2 Years" },
-  ],
-  PHONE: [
-    { value: 12, label: "1 Year" },
-    { value: 24, label: "2 Years" },
-  ],
-  TABLET: [
-    { value: 12, label: "1 Year" },
-    { value: 24, label: "2 Years" },
-  ],
-  // Accessories get shorter extensions
-  MOUSE: [
-    { value: 6, label: "6 Months" },
-    { value: 12, label: "1 Year" },
-  ],
-  KEYBOARD: [
-    { value: 6, label: "6 Months" },
-    { value: 12, label: "1 Year" },
-  ],
-  HEADSET: [
-    { value: 6, label: "6 Months" },
-    { value: 12, label: "1 Year" },
-  ],
-  WEBCAM: [
-    { value: 6, label: "6 Months" },
-    { value: 12, label: "1 Year" },
-  ],
-  DOCKING_STATION: [
-    { value: 12, label: "1 Year" },
-    { value: 24, label: "2 Years" },
-  ],
-  CHARGER: [
-    { value: 6, label: "6 Months" },
-    { value: 12, label: "1 Year" },
-  ],
-  CABLE: [
-    { value: 6, label: "6 Months" },
-  ],
-  OTHER_ACCESSORY: [
-    { value: 6, label: "6 Months" },
-    { value: 12, label: "1 Year" },
-  ],
-  // Default for other categories
-  OTHER: [
-    { value: 12, label: "1 Year" },
-    { value: 24, label: "2 Years" },
-  ],
-};
-
-// Get max extension allowed for a category
-function getMaxExtension(category: string | null | undefined): number {
-  const extensions = WARRANTY_EXTENSIONS[category ?? "OTHER"] ?? WARRANTY_EXTENSIONS.OTHER;
-  return extensions[extensions.length - 1]?.value ?? 0;
-}
-
-// Get available extension options (what's left after existing extensions)
-function getAvailableExtensions(category: string | null | undefined, alreadyExtended: number): { value: number; label: string }[] {
-  const extensions = WARRANTY_EXTENSIONS[category ?? "OTHER"] ?? WARRANTY_EXTENSIONS.OTHER;
-  const maxExtension = extensions[extensions.length - 1]?.value ?? 0;
-  const remaining = maxExtension - alreadyExtended;
-  
-  if (remaining <= 0) return [];
-  
-  // Filter to only show extensions that don't exceed remaining
-  return extensions.filter(ext => ext.value <= remaining);
-}
+// Warranty extension options (no limits - can extend as many times as needed)
+const WARRANTY_EXTENSION_OPTIONS = [
+  { value: 6, label: "6 Months" },
+  { value: 12, label: "1 Year" },
+  { value: 24, label: "2 Years" },
+  { value: 36, label: "3 Years" },
+];
 
 
 const STATUS_OPTIONS = ["IN_STOCK", "ASSIGNED", "IN_REPAIR", "RETIRED"];
@@ -920,37 +852,26 @@ export default function AssetDetailPage() {
               {/* Hardware warranty extension - only for ADMIN users */}
               {asset.asset_type === "HARDWARE" && isAdmin && (() => {
                 const alreadyExtended = asset.warranty_extended_months ?? 0;
-                const maxExtension = getMaxExtension(asset.category);
-                const availableExtensions = getAvailableExtensions(asset.category, alreadyExtended);
-                const isMaxed = availableExtensions.length === 0;
                 
                 return (
                   <div className="space-y-1">
                     <label className="text-sm font-medium">Extend Warranty</label>
-                    {isMaxed ? (
-                      <div className="p-3 bg-slate-100 dark:bg-[#1a1a1a] rounded-md border">
-                        <p className="text-sm text-slate-600 dark:text-[#96989d]">
-                          Maximum warranty extension reached ({maxExtension} months)
-                        </p>
-                      </div>
-                    ) : (
-                      <select
-                        className="w-full border rounded-md px-3 py-2 bg-transparent"
-                        value={warrantyExtension}
-                        onChange={(e) => setWarrantyExtension(Number(e.target.value))}
-                      >
-                        <option value={0}>No extension</option>
-                        {availableExtensions.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            + {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    )}
+                    <select
+                      className="w-full border rounded-md px-3 py-2 bg-transparent"
+                      value={warrantyExtension}
+                      onChange={(e) => setWarrantyExtension(Number(e.target.value))}
+                    >
+                      <option value={0}>No extension</option>
+                      {WARRANTY_EXTENSION_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          + {opt.label}
+                        </option>
+                      ))}
+                    </select>
                     <p className="text-xs text-muted-foreground">
                       Current warranty ends: {formatDate(asset.warranty_end)}
                       {alreadyExtended > 0 && (
-                        <span className="ml-1">(already extended by {alreadyExtended} months)</span>
+                        <span className="ml-1">(total extended: {alreadyExtended} months)</span>
                       )}
                       {warrantyExtension > 0 && (
                         <span className="text-green-600 ml-1">
