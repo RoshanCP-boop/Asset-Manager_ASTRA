@@ -76,6 +76,11 @@ class Organization(Base):
     # Is this a personal org (single user, public email)?
     is_personal: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    
+    # Company branding and settings
+    logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Prefix for employee IDs (e.g., "DOCK" -> DOCK001, DOCK002, etc.)
+    employee_id_prefix: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Relationships
     users = relationship("User", back_populates="organization")
@@ -108,6 +113,8 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(200))
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    # Company-assigned employee ID (e.g., DOCK001)
+    employee_id: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
 
     # Password is nullable for Google OAuth users
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)

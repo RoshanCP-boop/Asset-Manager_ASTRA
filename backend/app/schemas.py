@@ -25,6 +25,14 @@ class OrganizationRead(APIModel):
     domain: Optional[str] = None
     is_personal: bool
     created_at: datetime
+    logo_url: Optional[str] = None
+    employee_id_prefix: Optional[str] = None
+
+
+class OrganizationUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=2, max_length=200)
+    logo_url: Optional[str] = Field(default=None, max_length=500)
+    employee_id_prefix: Optional[str] = Field(default=None, max_length=20)
 
 
 # ---- Invite Code ----
@@ -79,6 +87,7 @@ class UserRead(APIModel):
     id: int
     name: str
     email: EmailStr
+    employee_id: Optional[str] = None
     role: UserRole
     is_active: bool
     organization_id: Optional[int] = None

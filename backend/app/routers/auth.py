@@ -14,6 +14,32 @@ from app.models import User, UserEventType, UserRole, Organization, InviteCode, 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+
+def generate_employee_id(db: Session, org: Organization) -> str | None:
+    """Generate an employee ID for a new user if org has a prefix configured."""
+    if not org.employee_id_prefix:
+        return None
+    
+    prefix = org.employee_id_prefix
+    
+    # Find the max existing number for this prefix
+    existing_ids = db.query(User.employee_id).filter(
+        User.organization_id == org.id,
+        User.employee_id != None,
+        User.employee_id.like(f"{prefix}%")
+    ).all()
+    
+    max_num = 0
+    for (emp_id,) in existing_ids:
+        if emp_id and emp_id.startswith(prefix):
+            try:
+                num = int(emp_id[len(prefix):])
+                max_num = max(max_num, num)
+            except ValueError:
+                pass
+    
+    return f"{prefix}{str(max_num + 1).zfill(3)}"
+
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
@@ -185,6 +211,9 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             # Get or create organization
             org, is_first_in_org = get_or_create_organization(db, email, invite_code)
             
+            # Generate employee ID if org has prefix configured
+            employee_id = generate_employee_id(db, org)
+            
             # Create new user
             user = User(
                 name=name,
@@ -194,6 +223,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
                 role=UserRole.ADMIN if is_first_in_org else UserRole.EMPLOYEE,
                 is_active=True,
                 organization_id=org.id,
+                employee_id=employee_id,
             )
             db.add(user)
             db.commit()

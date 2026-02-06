@@ -29,6 +29,7 @@ type User = {
   id: number;
   name: string;
   email: string;
+  employee_id: string | null;
   role: string;
   is_active: boolean;
   status: string;
@@ -130,7 +131,8 @@ function UsersContent() {
         const query = searchQuery.toLowerCase();
         const matchesName = user.name.toLowerCase().includes(query);
         const matchesEmail = user.email.toLowerCase().includes(query);
-        if (!matchesName && !matchesEmail) {
+        const matchesEmployeeId = user.employee_id?.toLowerCase().includes(query);
+        if (!matchesName && !matchesEmail && !matchesEmployeeId) {
           return false;
         }
       }
@@ -782,6 +784,7 @@ function UsersContent() {
                 <TableRow>
                   <TableHead className="hidden sm:table-cell">#</TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead className="hidden lg:table-cell">Employee ID</TableHead>
                   <TableHead className="hidden md:table-cell">Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead className="hidden sm:table-cell">Status</TableHead>
@@ -796,6 +799,15 @@ function UsersContent() {
                       <Link href={`/users/${user.id}`} className="text-blue-600 hover:underline">
                         {user.name}
                       </Link>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      {user.employee_id ? (
+                        <span className="font-mono text-sm bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                          {user.employee_id}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{user.email}</TableCell>
                     <TableCell>

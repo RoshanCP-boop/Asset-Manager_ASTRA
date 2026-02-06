@@ -7,6 +7,7 @@ import { apiFetch, getErrorMessage, ApiError } from "@/lib/api";
 import { getToken, clearToken } from "@/lib/auth";
 import { formatDateTime } from "@/lib/date";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -26,6 +27,7 @@ type User = {
   id: number;
   name: string;
   email: string;
+  employee_id: string | null;
   role: string;
   is_active: boolean;
   status: string;
@@ -97,6 +99,11 @@ export default function UserDetailPage() {
   const [showAssignSection, setShowAssignSection] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  
+  // Employee ID editing state
+  const [editingEmployeeId, setEditingEmployeeId] = useState(false);
+  const [newEmployeeId, setNewEmployeeId] = useState("");
+  const [savingEmployeeId, setSavingEmployeeId] = useState(false);
 
   const canAssign = currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER";
 
@@ -239,6 +246,51 @@ export default function UserDetailPage() {
     setSelectedAssetIds(new Set());
   }
 
+  async function saveEmployeeId() {
+    if (!user) return;
+    const token = getToken();
+    if (!token) return;
+
+    setSavingEmployeeId(true);
+    setActionError(null);
+    try {
+      await apiFetch(
+        `/organization/users/${user.id}/employee-id?employee_id=${encodeURIComponent(newEmployeeId)}`,
+        { method: "PUT" },
+        token
+      );
+      setEditingEmployeeId(false);
+      setActionMessage("Employee ID updated successfully");
+      await loadUserData();
+    } catch (err) {
+      setActionError(getErrorMessage(err));
+    } finally {
+      setSavingEmployeeId(false);
+    }
+  }
+
+  async function generateEmployeeId() {
+    if (!user) return;
+    const token = getToken();
+    if (!token) return;
+
+    setSavingEmployeeId(true);
+    setActionError(null);
+    try {
+      await apiFetch(
+        `/organization/generate-employee-id/${user.id}`,
+        { method: "POST" },
+        token
+      );
+      setActionMessage("Employee ID generated successfully");
+      await loadUserData();
+    } catch (err) {
+      setActionError(getErrorMessage(err));
+    } finally {
+      setSavingEmployeeId(false);
+    }
+  }
+
   useEffect(() => {
     loadUserData();
   }, [userId]);
@@ -286,7 +338,43 @@ export default function UserDetailPage() {
                 {user.name.charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <h1 className="text-lg sm:text-2xl font-bold text-slate-800 dark:text-[#f0f6fc] truncate">{user.name}</h1>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-lg sm:text-2xl font-bold text-slate-800 dark:text-[#f0f6fc] truncate">{user.name}</h1>
+                  {editingEmployeeId ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={newEmployeeId}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEmployeeId(e.target.value.toUpperCase())}
+                        placeholder="e.g., DOCK001"
+                        className="h-7 w-28 font-mono text-sm"
+                      />
+                      <Button size="sm" onClick={saveEmployeeId} disabled={savingEmployeeId} className="h-7 px-2">
+                        {savingEmployeeId ? "..." : "Save"}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingEmployeeId(false)} className="h-7 px-2">
+                        ✕
+                      </Button>
+                    </div>
+                  ) : user.employee_id ? (
+                    <span 
+                      className="font-mono text-xs sm:text-sm bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      onClick={() => { if (currentUser?.role === "ADMIN") { setNewEmployeeId(user.employee_id || ""); setEditingEmployeeId(true); } }}
+                      title={currentUser?.role === "ADMIN" ? "Click to edit" : undefined}
+                    >
+                      {user.employee_id}
+                    </span>
+                  ) : currentUser?.role === "ADMIN" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-xs"
+                      onClick={generateEmployeeId}
+                      disabled={savingEmployeeId}
+                    >
+                      {savingEmployeeId ? "..." : "+ Add ID"}
+                    </Button>
+                  ) : null}
+                </div>
                 <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
               </div>
             </div>
