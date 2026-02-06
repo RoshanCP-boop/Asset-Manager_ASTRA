@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, getErrorMessage } from "@/lib/api";
 import { getToken } from "@/lib/auth";
@@ -10,27 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 type Location = { id: number; name: string };
-
-// ✅ Edit these to whatever categories you want
-const HARDWARE_CATEGORY_OPTIONS = [
-  { value: "LAPTOP", label: "Laptop" },
-  { value: "PHONE", label: "Phone" },
-  { value: "MONITOR", label: "Monitor" },
-  { value: "TABLET", label: "Tablet" },
-  { value: "ACCESSORY", label: "Accessory" },
-  { value: "OTHER", label: "Other" },
-] as const;
-
-const ACCESSORY_TYPE_OPTIONS = [
-  { value: "MOUSE", label: "Mouse" },
-  { value: "KEYBOARD", label: "Keyboard" },
-  { value: "HEADSET", label: "Headset" },
-  { value: "WEBCAM", label: "Webcam" },
-  { value: "DOCKING_STATION", label: "Docking Station" },
-  { value: "CHARGER", label: "Charger" },
-  { value: "CABLE", label: "Cable" },
-  { value: "OTHER_ACCESSORY", label: "Other" },
-] as const;
+type Category = { id: number; name: string; category_type: string; display_name: string };
 
 const RENEWAL_PERIOD_OPTIONS = [
   { value: "1_MONTH", label: "1 Month", months: 1 },
@@ -70,8 +50,7 @@ export default function NewAssetPage() {
   const token = getToken();
 
   const [asset_type, setAssetType] = useState<"HARDWARE" | "SOFTWARE">("HARDWARE");
-  const [category, setCategory] = useState<string>(HARDWARE_CATEGORY_OPTIONS[0].value);
-  const [accessoryType, setAccessoryType] = useState<string>(ACCESSORY_TYPE_OPTIONS[0].value);
+  const [category, setCategory] = useState<string>("");
   const [subscription, setSubscription] = useState("");
   const [renewalPeriod, setRenewalPeriod] = useState<string>(RENEWAL_PERIOD_OPTIONS[0].value);
   const [startDate, setStartDate] = useState<string>(new Date().toISOString().split("T")[0]);
@@ -89,12 +68,54 @@ export default function NewAssetPage() {
   const [location_id, setLocationId] = useState<number | "">("");
 
   const [locations, setLocations] = useState<Location[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  
+  // New category creation
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryType, setNewCategoryType] = useState<"HARDWARE" | "ACCESSORY">("HARDWARE");
+  
+  // New location creation
+  const [showNewLocationInput, setShowNewLocationInput] = useState(false);
+  const [newLocationName, setNewLocationName] = useState("");
+
+  // Filter categories by type
+  const hardwareCategories = categories.filter(c => c.category_type === "HARDWARE");
+  const accessoryCategories = categories.filter(c => c.category_type === "ACCESSORY");
+  
+  // Determine if current selection is an accessory-type category
+  const isAccessorySelected = category === "ACCESSORY" || accessoryCategories.some(c => c.name === category);
+
+  // Fetch locations and categories
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!token) return;
+        const [locs, cats] = await Promise.all([
+          apiFetch<Location[]>("/locations", {}, token),
+          apiFetch<Category[]>("/categories", {}, token),
+        ]);
+        setLocations(locs);
+        setCategories(cats);
+        
+        // Set default category once loaded
+        const hw = cats.filter(c => c.category_type === "HARDWARE");
+        if (hw.length > 0 && !category) {
+          setCategory(hw[0].name);
+        }
+      } catch {
+        // optional
+      }
+    })();
+  }, [token]);
 
   // generate a tag on first load
   useEffect(() => {
-    setAssetTag(buildAssetTag(asset_type, category));
+    if (category) {
+      setAssetTag(buildAssetTag(asset_type, category));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -103,25 +124,58 @@ export default function NewAssetPage() {
     if (!autoTag) return;
     let key: string;
     if (asset_type === "HARDWARE") {
-      key = category === "ACCESSORY" ? accessoryType : category;
+      key = category;
     } else {
       key = subscription;
     }
     setAssetTag(buildAssetTag(asset_type, key));
-  }, [asset_type, category, accessoryType, subscription, autoTag]);
+  }, [asset_type, category, subscription, autoTag]);
   
-
-  useEffect(() => {
-    (async () => {
-      try {
-        if (!token) return;
-        const locs = await apiFetch<Location[]>("/locations", {}, token);
-        setLocations(locs);
-      } catch {
-        // optional
-      }
-    })();
-  }, [token]);
+  // Create new category
+  async function createCategory() {
+    if (!newCategoryName.trim()) return;
+    try {
+      const newCat = await apiFetch<Category>(
+        "/categories",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            name: newCategoryName.trim().toUpperCase().replace(/\s+/g, "_"),
+            category_type: newCategoryType,
+            display_name: newCategoryName.trim(),
+          }),
+        },
+        token!
+      );
+      setCategories([...categories, newCat]);
+      setCategory(newCat.name);
+      setNewCategoryName("");
+      setShowNewCategoryInput(false);
+    } catch (e) {
+      setErr(getErrorMessage(e));
+    }
+  }
+  
+  // Create new location
+  async function createLocation() {
+    if (!newLocationName.trim()) return;
+    try {
+      const newLoc = await apiFetch<Location>(
+        "/locations",
+        {
+          method: "POST",
+          body: JSON.stringify({ name: newLocationName.trim() }),
+        },
+        token!
+      );
+      setLocations([...locations, newLoc]);
+      setLocationId(newLoc.id);
+      setNewLocationName("");
+      setShowNewLocationInput(false);
+    } catch (e) {
+      setErr(getErrorMessage(e));
+    }
+  }
 
   async function onCreate() {
     setErr(null);
@@ -172,7 +226,7 @@ export default function NewAssetPage() {
             asset_tag: asset_tag.trim(),
             asset_type,
   
-            category: isSoftware ? null : (category === "ACCESSORY" ? accessoryType : category),
+            category: isSoftware ? null : category,
             subscription: isSoftware ? subscription.trim() : null,
   
             manufacturer: isSoftware ? null : (manufacturer || null),
@@ -259,36 +313,81 @@ export default function NewAssetPage() {
           {asset_type === "HARDWARE" ? (
             <>
               <div className="space-y-1">
-                <div className="text-sm">Category</div>
-                <select
-                  className="w-full border rounded-md px-3 py-2 bg-transparent"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                >
-                  {HARDWARE_CATEGORY_OPTIONS.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="text-sm font-medium">Category</div>
+                {!showNewCategoryInput ? (
+                  <div className="flex gap-2">
+                    <select
+                      className="flex-1 border rounded-md px-3 py-2 bg-transparent"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                    >
+                      <optgroup label="Hardware">
+                        {hardwareCategories.map((c) => (
+                          <option key={c.id} value={c.name}>
+                            {c.display_name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Accessories">
+                        {accessoryCategories.map((c) => (
+                          <option key={c.id} value={c.name}>
+                            {c.display_name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowNewCategoryInput(true)}
+                      className="whitespace-nowrap"
+                    >
+                      + Add New
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Category name (e.g., Printer)"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        className="flex-1"
+                      />
+                      <select
+                        className="border rounded-md px-2 py-1 bg-transparent text-sm"
+                        value={newCategoryType}
+                        onChange={(e) => setNewCategoryType(e.target.value as "HARDWARE" | "ACCESSORY")}
+                      >
+                        <option value="HARDWARE">Hardware</option>
+                        <option value="ACCESSORY">Accessory</option>
+                      </select>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={createCategory}
+                        disabled={!newCategoryName.trim()}
+                      >
+                        Add Category
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShowNewCategoryInput(false);
+                          setNewCategoryName("");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
-              {/* Accessory type dropdown */}
-              {category === "ACCESSORY" && (
-                <div className="space-y-1">
-                  <div className="text-sm">Accessory Type</div>
-                  <select
-                    className="w-full border rounded-md px-3 py-2 bg-transparent"
-                    value={accessoryType}
-                    onChange={(e) => setAccessoryType(e.target.value)}
-                  >
-                    {ACCESSORY_TYPE_OPTIONS.map((a) => (
-                      <option key={a.value} value={a.value}>
-                        {a.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
               
               {/* Warranty dates */}
               <div className="grid grid-cols-2 gap-4">
@@ -404,19 +503,61 @@ export default function NewAssetPage() {
 
           {/* Location */}
           <div className="space-y-1">
-            <div className="text-sm">Location</div>
-            <select
-              className="w-full border rounded-md px-3 py-2 bg-transparent"
-              value={location_id}
-              onChange={(e) => setLocationId(e.target.value === "" ? "" : Number(e.target.value))}
-            >
-              <option value="">(none)</option>
-              {locations.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </select>
+            <div className="text-sm font-medium">Location</div>
+            {!showNewLocationInput ? (
+              <div className="flex gap-2">
+                <select
+                  className="flex-1 border rounded-md px-3 py-2 bg-transparent"
+                  value={location_id}
+                  onChange={(e) => setLocationId(e.target.value === "" ? "" : Number(e.target.value))}
+                >
+                  <option value="">(none)</option>
+                  {locations.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowNewLocationInput(true)}
+                  className="whitespace-nowrap"
+                >
+                  + Add New
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Input
+                  placeholder="Location name (e.g., HQ - Floor 2)"
+                  value={newLocationName}
+                  onChange={(e) => setNewLocationName(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={createLocation}
+                    disabled={!newLocationName.trim()}
+                  >
+                    Add Location
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowNewLocationInput(false);
+                      setNewLocationName("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 pt-4">

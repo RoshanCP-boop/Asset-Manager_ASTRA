@@ -23,6 +23,30 @@ def list_locations(db: Session) -> list[models.Location]:
     return list(db.scalars(select(models.Location).order_by(models.Location.name)))
 
 
+# ---------- Categories ----------
+def create_category(db: Session, data: schemas.CategoryCreate) -> models.Category:
+    cat = models.Category(
+        name=data.name,
+        category_type=data.category_type,
+        display_name=data.display_name,
+    )
+    try:
+        db.add(cat)
+        db.commit()
+        db.refresh(cat)
+        return cat
+    except Exception:
+        db.rollback()
+        raise
+
+
+def list_categories(db: Session, category_type: str | None = None) -> list[models.Category]:
+    query = select(models.Category).order_by(models.Category.display_name)
+    if category_type:
+        query = query.where(models.Category.category_type == category_type)
+    return list(db.scalars(query))
+
+
 # ---------- Users ----------
 def create_user(db: Session, data: schemas.UserCreate) -> models.User:
     user = models.User(name=data.name, email=data.email, password_hash=hash_password(data.password), role=data.role)

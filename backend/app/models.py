@@ -42,6 +42,15 @@ class Location(Base):
     assets = relationship("Asset", back_populates="location")
 
 
+class Category(Base):
+    __tablename__ = "categories"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    category_type: Mapped[str] = mapped_column(String(50), index=True)  # "HARDWARE" or "ACCESSORY"
+    display_name: Mapped[str] = mapped_column(String(100))  # User-friendly display name
+
+
 class UserRole(str, Enum):
     ADMIN = "ADMIN"
     MANAGER = "MANAGER"

@@ -54,6 +54,20 @@ class LocationRead(APIModel):
     name: str
 
 
+# ---- Category ----
+class CategoryCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    category_type: str = Field(..., pattern="^(HARDWARE|ACCESSORY)$")  # HARDWARE or ACCESSORY
+    display_name: str = Field(..., min_length=2, max_length=100)
+
+
+class CategoryRead(APIModel):
+    id: int
+    name: str
+    category_type: str
+    display_name: str
+
+
 # ---- User ----
 class UserCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=200)

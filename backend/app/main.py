@@ -12,6 +12,7 @@ from app.routers.auth import router as auth_router
 from app.routers.assets import router as assets_router
 from app.routers.users import router as users_router
 from app.routers.locations import router as locations_router
+from app.routers.categories import router as categories_router
 from app.routers.user_requests import router as user_requests_router
 from app.routers.asset_requests import router as asset_requests_router
 from app.routers.audit import router as audit_router
@@ -108,6 +109,7 @@ def health():
 if DEBUG_MODE:
     app.include_router(test_db_router)
 app.include_router(locations_router)
+app.include_router(categories_router)
 app.include_router(users_router)
 app.include_router(user_requests_router)
 app.include_router(assets_router)
