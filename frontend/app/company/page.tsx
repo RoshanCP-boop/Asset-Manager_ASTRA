@@ -72,8 +72,35 @@ export default function CompanyDashboardPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const isAdmin = currentUser?.role === "ADMIN";
+
+  // Handle drag and drop for logo
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      uploadLogo(file);
+    } else if (file) {
+      setLogoError("Please drop an image file");
+    }
+  }
   
   // Get proper logo URL (handle relative API paths)
   const getLogoUrl = (url: string | null) => {
@@ -284,9 +311,24 @@ export default function CompanyDashboardPage() {
               <div className="space-y-3">
                 <label className="text-sm font-medium">Company Logo</label>
                 <div className="flex items-start gap-4">
-                  {/* Logo Preview */}
-                  <div className="w-20 h-20 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center bg-slate-50 dark:bg-slate-900 overflow-hidden">
-                    {data?.organization.logo_url ? (
+                  {/* Logo Preview - supports drag and drop */}
+                  <div 
+                    className={`w-20 h-20 rounded-lg border-2 border-dashed flex items-center justify-center overflow-hidden transition-all cursor-pointer ${
+                      isDragging 
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 scale-105" 
+                        : "border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/20"
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => document.getElementById("logo-input")?.click()}
+                    title="Click or drag & drop to upload"
+                  >
+                    {isDragging ? (
+                      <svg className="w-8 h-8 text-blue-500 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                    ) : data?.organization.logo_url ? (
                       <img 
                         src={getLogoUrl(data.organization.logo_url) || ""} 
                         alt="Logo" 
@@ -304,6 +346,7 @@ export default function CompanyDashboardPage() {
                     <div className="flex items-center gap-2">
                       <label className="cursor-pointer">
                         <input
+                          id="logo-input"
                           type="file"
                           accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
                           onChange={(e) => {
@@ -334,7 +377,7 @@ export default function CompanyDashboardPage() {
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Supported formats: PNG, JPG, GIF, WebP, SVG. Max 5MB.
+                      Drag & drop or click the box. PNG, JPG, GIF, WebP, SVG. Max 5MB.
                     </p>
                     {logoError && (
                       <p className="text-xs text-red-500">{logoError}</p>
