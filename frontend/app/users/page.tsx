@@ -782,9 +782,8 @@ function UsersContent() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="hidden sm:table-cell">#</TableHead>
+                  <TableHead className="hidden sm:table-cell">ID</TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead className="hidden lg:table-cell">Employee ID</TableHead>
                   <TableHead className="hidden md:table-cell">Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead className="hidden sm:table-cell">Status</TableHead>
@@ -794,20 +793,19 @@ function UsersContent() {
               <TableBody>
                 {paginatedUsers.map((user, index) => (
                   <TableRow key={user.id} className="table-row-hover transition-all">
-                    <TableCell className="hidden sm:table-cell font-medium text-slate-500">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {user.employee_id ? (
+                        <span className="font-mono text-sm font-medium text-slate-700 dark:text-slate-300">
+                          {user.employee_id}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-xs">—</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Link href={`/users/${user.id}`} className="text-blue-600 hover:underline">
                         {user.name}
                       </Link>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      {user.employee_id ? (
-                        <span className="font-mono text-sm bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
-                          {user.employee_id}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{user.email}</TableCell>
                     <TableCell>
